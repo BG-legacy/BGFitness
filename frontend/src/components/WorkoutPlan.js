@@ -33,7 +33,7 @@ const WorkoutPlan = () => {
    */
   const handleSubmit = async e => {
     e.preventDefault();
-    
+
     // Send the raw form data to preserve exact input values
     try {
       await fetchData('/workout', 'POST', {
@@ -41,7 +41,7 @@ const WorkoutPlan = () => {
         // Ensure duration is passed as entered by the user
         duration: formData.duration,
         // Preserve the exact fitness level text as entered
-        level: formData.level
+        level: formData.level,
       });
     } catch (err) {
       console.error('Error generating workout plan:', err);
@@ -49,13 +49,13 @@ const WorkoutPlan = () => {
   };
 
   // Custom handler for duration to ensure it's stored as entered
-  const handleDurationChange = (e) => {
+  const handleDurationChange = e => {
     const value = e.target.value;
     handleChange({
       target: {
         name: 'duration',
-        value: value // Store as string to preserve exactly what user entered
-      }
+        value: value, // Store as string to preserve exactly what user entered
+      },
     });
   };
 
