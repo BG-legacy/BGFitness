@@ -1,7 +1,13 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// Determine if we're running in production (on Render) or locally
+const isProduction = window.location.hostname !== 'localhost';
+
+// Configure API base URL based on environment
+const API_BASE_URL = isProduction 
+  ? 'https://bgfitness.onrender.com/api'
+  : 'http://localhost:3001/api';
 
 export const useApi = () => {
   const [data, setData] = useState(null);
@@ -13,12 +19,19 @@ export const useApi = () => {
       setLoading(true);
       setError(null);
 
+      // For debug - log which API URL we're using
+      console.log(`Making ${method} request to: ${API_BASE_URL}${endpoint}`);
+
       const config = {
         method,
         url: `${API_BASE_URL}${endpoint}`,
         headers: {
           'Content-Type': 'application/json',
         },
+        // Add timeout for mobile devices
+        timeout: 60000, // 60 second timeout
+        // Enable credentials for CORS
+        withCredentials: false,
       };
 
       if (body) {
