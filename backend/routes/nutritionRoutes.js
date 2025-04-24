@@ -39,7 +39,15 @@ router.post('/', validateNutritionInput, async (req, res, next) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        const mealPlan = await nutritionController.generateMealPlan(req.body);
+        
+        // Add mobile detection info to the request
+        const nutritionInput = {
+            ...req.body,
+            // Pass mobile detection to controller
+            isMobile: req.isMobile || false
+        };
+        
+        const mealPlan = await nutritionController.generateMealPlan(nutritionInput);
         
         // Store the meal plan in session for download route
         req.session.mealPlan = mealPlan;

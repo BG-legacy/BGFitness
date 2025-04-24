@@ -115,4 +115,61 @@ router.get('/mobile', (req, res) => {
   });
 });
 
+/**
+ * @route   POST /api/diagnostics/mobile-ai-test
+ * @desc    Test endpoint for mobile AI functionality
+ * @access  Public
+ */
+router.post('/mobile-ai-test', async (req, res) => {
+  try {
+    // Import OpenAI service directly in this route
+    const openaiService = require('../services/openaiService');
+    
+    // Simple test prompt that doesn't require a lot of token
+    const testPrompt = {
+      prompt: req.body.prompt || "Generate a simple test response",
+      isMobile: true
+    };
+    
+    // Simple system prompt
+    const testSystemPrompt = `You are a helpful assistant. 
+    Respond with a simple JSON response with the following format:
+    {
+      "message": "string",
+      "status": "success",
+      "timestamp": "ISO date string"
+    }`;
+    
+    // Run a quick, simple AI test - force mobile mode
+    const result = await openaiService.generateResponse(testPrompt, testSystemPrompt, true);
+    
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: "Mobile AI test completed successfully",
+      testResult: result,
+      timestamp: new Date().toISOString(),
+      mobileDetected: req.isMobile || false,
+      connectionInfo: {
+        userAgent: req.headers['user-agent'],
+        ip: req.ip,
+        host: req.headers.host,
+        origin: req.headers.origin
+      }
+    });
+  } catch (error) {
+    // Return detailed error information to help diagnose issues
+    res.status(500).json({
+      success: false,
+      message: "Mobile AI test failed",
+      error: {
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : null
+      },
+      timestamp: new Date().toISOString(),
+      mobileDetected: req.isMobile || false
+    });
+  }
+});
+
 module.exports = router; 

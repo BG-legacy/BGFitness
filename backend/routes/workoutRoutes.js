@@ -44,7 +44,9 @@ router.post('/', validateWorkoutInput, async (req, res, next) => {
             ...req.body,
             // Ensure duration and level are preserved exactly as submitted
             duration: req.body.duration,
-            level: req.body.level
+            level: req.body.level,
+            // Pass mobile detection to controller
+            isMobile: req.isMobile || false
         };
         
         const workoutPlan = await workoutController.generateWorkoutPlan(workoutInput);

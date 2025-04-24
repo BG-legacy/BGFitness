@@ -37,8 +37,11 @@ class WorkoutController {
                 }))
             };
             
+            // Detect if request is from mobile
+            const isMobile = input.isMobile || false;
+            
             // Generate the workout plan
-            const response = await openaiService.generateResponse(inputWithHistory, workoutSystemPrompt);
+            const response = await openaiService.generateResponse(inputWithHistory, workoutSystemPrompt, isMobile);
             
             // Ensure we preserve the exact user input values
             if (input.duration) {

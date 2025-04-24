@@ -4,7 +4,11 @@ const retryWithBackoff = require('../utils/retry');
 
 // Simple in-memory cache
 const responseCache = new Map();
-const CACHE_TTL = 300000; // Reduced from 1 hour to 5 minutes (300000 ms)
+const CACHE_TTL = 300000; // 5 minutes (300000 ms)
+
+// Set higher timeouts for mobile clients
+const MOBILE_TIMEOUT = 60000; // 60 seconds for mobile
+const STANDARD_TIMEOUT = config.timeout || 30000; // Default 30 seconds
 
 /**
  * Advanced JSON repair function to handle common JSON parsing errors
@@ -86,7 +90,17 @@ class OpenAIService {
     constructor() {
         this.client = new OpenAI({
             apiKey: config.apiKey,
-            timeout: config.timeout,
+            timeout: STANDARD_TIMEOUT,
+        });
+    }
+
+    // Create a new OpenAI client with appropriate timeout
+    getClient(isMobile = false) {
+        const timeout = isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT;
+        return new OpenAI({
+            apiKey: config.apiKey,
+            timeout: timeout,
+            maxRetries: isMobile ? 3 : config.retryConfig.maxRetries || 2,
         });
     }
 
@@ -119,7 +133,7 @@ class OpenAIService {
         return sanitized;
     }
 
-    async generateResponse(prompt, systemMessage) {
+    async generateResponse(prompt, systemMessage, isMobile = false) {
         const sanitizedPrompt = this.sanitizeInput(prompt);
         
         // Check if this is a workout request - if so, add randomness to avoid caching
@@ -148,27 +162,34 @@ class OpenAIService {
         }
 
         const makeApiCall = async () => {
-            // Simplified prompt structure for faster processing
-            const simplifiedPrompt = {};
-            const importantFields = ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions'];
-            for (const field of importantFields) {
-                if (sanitizedPrompt[field] !== undefined) {
-                    simplifiedPrompt[field] = sanitizedPrompt[field];
-                }
-            }
-            
-            const response = await this.client.chat.completions.create({
-                model: config.model,
-                messages: [
-                    { role: 'system', content: systemMessage },
-                    { role: 'user', content: JSON.stringify(simplifiedPrompt) }
-                ],
-                max_tokens: config.maxTokens,
-                temperature: config.temperature,
-                response_format: { type: 'json_object' }
-            });
-
             try {
+                // Get client with appropriate timeout
+                const client = this.getClient(isMobile);
+                
+                // Simplified prompt structure for faster processing
+                const simplifiedPrompt = {};
+                const importantFields = ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 
+                                         'fitnessGoal', 'level', 'duration', 'equipment', 'restrictions'];
+                for (const field of importantFields) {
+                    if (sanitizedPrompt[field] !== undefined) {
+                        simplifiedPrompt[field] = sanitizedPrompt[field];
+                    }
+                }
+                
+                // For mobile clients, set a smaller max_tokens to speed up response time
+                const maxTokens = isMobile ? Math.min(config.maxTokens, 1000) : config.maxTokens;
+                
+                const response = await client.chat.completions.create({
+                    model: config.model,
+                    messages: [
+                        { role: 'system', content: systemMessage },
+                        { role: 'user', content: JSON.stringify(simplifiedPrompt) }
+                    ],
+                    max_tokens: maxTokens,
+                    temperature: config.temperature,
+                    response_format: { type: 'json_object' }
+                });
+
                 // Skip verbose logging in production for performance
                 if (process.env.NODE_ENV !== 'production') {
                     console.log('OpenAI raw response:', response.choices[0].message.content.substring(0, 200) + '...');
@@ -186,8 +207,8 @@ class OpenAIService {
                     // Fallback: Create a minimal valid response with just the essential fields
                     // This ensures the client gets something usable even if the full response is corrupted
                     return {
-                        title: "Generated Meal Plan",
-                        description: "A basic meal plan was generated, but some details may be missing due to technical issues.",
+                        title: "Generated Plan",
+                        description: "A basic plan was generated, but some details may be missing due to technical issues.",
                         dailyCalories: 2000,
                         macros: {
                             protein: 150,
@@ -220,25 +241,45 @@ class OpenAIService {
                                 }
                             }
                         ],
-                        notes: ["This is a fallback meal plan due to data processing issues. Please try again later."]
+                        notes: ["This is a fallback plan due to data processing issues. Please try again later."]
                     };
                 }
             } catch (error) {
                 console.error('OpenAI processing error:', error.message);
-                throw new Error('Error processing nutrition data');
+                throw new Error(`Error processing data: ${error.message}`);
             }
         };
 
-        // Get response with retry mechanism
-        const result = await retryWithBackoff(makeApiCall, config.retryConfig);
-        
-        // Cache the result
-        responseCache.set(cacheKey, {
-            data: result,
-            timestamp: Date.now()
-        });
-        
-        return result;
+        // Configure retry with longer delays for mobile
+        const retryConfig = isMobile ? 
+            { 
+                maxRetries: 4, 
+                initialDelay: 1000, 
+                maxDelay: 10000, 
+                backoffFactor: 1.5 
+            } : config.retryConfig;
+
+        try {
+            // Get response with retry mechanism
+            const result = await retryWithBackoff(makeApiCall, retryConfig);
+            
+            // Cache the result
+            responseCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+            
+            return result;
+        } catch (error) {
+            console.error('Failed after multiple retries:', error.message);
+            // Return a simplified response that won't break the client UI
+            return {
+                title: "Connection Error",
+                description: "Unable to generate content due to connection issues. Please try again later when your internet connection is more stable.",
+                error: true,
+                errorType: "network"
+            };
+        }
     }
 }
 

@@ -5,47 +5,13 @@ const PDFDocument = require('pdfkit');
 class NutritionController {
     async generateMealPlan(input) {
         try {
-            // Only log minimal info in production for better performance
-            if (process.env.NODE_ENV !== 'production') {
-                console.log('Generating meal plan for user with goal:', input.goal);
-            }
+            // Detect if request is from mobile
+            const isMobile = input.isMobile || false;
             
-            // Essential data only
-            const essentialInput = {
-                weight: input.weight,
-                height: input.height,
-                age: input.age,
-                goal: input.goal,
-                activityLevel: input.activityLevel
-            };
+            // Generate the meal plan with the mobile flag
+            const response = await openaiService.generateResponse(input, nutritionSystemPrompt, isMobile);
             
-            // Only add dietary restrictions if they exist
-            if (input.dietaryRestrictions && input.dietaryRestrictions.length > 0) {
-                essentialInput.dietaryRestrictions = input.dietaryRestrictions;
-            }
-            
-            try {
-                const response = await openaiService.generateResponse(essentialInput, nutritionSystemPrompt);
-                
-                // Validate the response has the minimum required fields
-                if (!response || !response.title || !response.meals || !Array.isArray(response.meals)) {
-                    console.warn('Incomplete meal plan data received:', JSON.stringify(response).substring(0, 100) + '...');
-                    return {
-                        title: response?.title || "Nutrition Plan",
-                        description: response?.description || "Custom meal plan based on your inputs.",
-                        dailyCalories: response?.dailyCalories || this.calculateEstimatedCalories(essentialInput),
-                        macros: response?.macros || this.generateDefaultMacros(essentialInput),
-                        meals: response?.meals || this.generateBasicMeals(essentialInput),
-                        notes: ["Some meal details may be simplified due to processing limitations."]
-                    };
-                }
-                
-                return response;
-            } catch (apiError) {
-                console.error('OpenAI service error:', apiError.message);
-                // Create a fallback meal plan on API failure
-                return this.createFallbackMealPlan(essentialInput);
-            }
+            return response;
         } catch (error) {
             console.error('Error generating meal plan:', error);
             throw new Error('Failed to generate meal plan');
