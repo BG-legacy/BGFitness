@@ -12,4 +12,5 @@ const PORT = process.env.PORT || 3001;
 // Start the server and listen for incoming requests
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Backend hosted at https://bgfitness.onrender.com`);
 }); 

@@ -3,14 +3,19 @@
  * This file sets up the core Express server with middleware, routes, and error handling
  */
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 // Import required dependencies
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const errorHandler = require('./middleware/errorHandler');
+const mobileDetect = require('./middleware/mobileDetect');
 const workoutRoutes = require('./routes/workoutRoutes');
 const nutritionRoutes = require('./routes/nutritionRoutes');
 const downloadRoutes = require('./routes/download');
+const diagnosticsRoutes = require('./routes/diagnostics');
 
 // Initialize Express application
 const app = express();
@@ -19,14 +24,38 @@ const app = express();
  * Middleware Configuration
  * These middleware functions process requests before they reach route handlers
  */
+// Define allowed origins - use environment variable if available, or default to hardcoded values
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : [
+      'http://localhost:3000', 
+      'https://bg-fitness-seven.vercel.app',
+      'capacitor://localhost', 
+      'ionic://localhost',
+      'http://localhost',
+      'http://localhost:8100',
+      // Add Render domain
+      'https://bgfitness.onrender.com',
+      // Allow mobile app requests
+      'capacitor://bgfitness',
+      'bgfitness://*',
+      // Allow all origins in development
+      '*'
+    ];
+
+// Configure CORS middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://bg-fitness-seven.vercel.app'], // Allow requests from frontend servers
+  origin: true, // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed request headers
-  credentials: true // Allow credentials (cookies, authorization headers)
+  credentials: true, // Allow credentials (cookies, authorization headers)
+  exposedHeaders: ['Content-Type', 'Authorization'] // Expose these headers to client
 }));
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
+
+// Add mobile detection middleware
+app.use(mobileDetect);
 
 /**
  * Session Configuration
@@ -49,6 +78,10 @@ app.use(session({
 app.use('/api/workout', workoutRoutes); // Workout-related endpoints
 app.use('/api/nutrition', nutritionRoutes); // Nutrition-related endpoints
 app.use('/api/download', downloadRoutes); // File download endpoints
+app.use('/api/diagnostics', diagnosticsRoutes); // Diagnostics endpoints
+
+// Make allowedOrigins available to the app
+app.set('allowedOrigins', allowedOrigins);
 
 // Global error handling middleware
 app.use(errorHandler);
