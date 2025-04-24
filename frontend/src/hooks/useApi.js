@@ -5,9 +5,7 @@ import axios from 'axios';
 const isProduction = window.location.hostname !== 'localhost';
 
 // Configure API base URL based on environment
-const API_BASE_URL = isProduction 
-  ? 'https://bgfitness.onrender.com/api'
-  : 'http://localhost:3001/api';
+const API_BASE_URL = isProduction ? 'https://bgfitness.onrender.com/api' : 'http://localhost:3001/api';
 
 export const useApi = () => {
   const [data, setData] = useState(null);
