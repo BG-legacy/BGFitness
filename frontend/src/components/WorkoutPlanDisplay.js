@@ -7,14 +7,14 @@ const WorkoutPlanDisplay = ({ workoutPlan }) => {
   if (!workoutPlan) return null;
 
   // Format workout duration to preserve exact user input
-  const formatDuration = (duration) => {
+  const formatDuration = duration => {
     if (duration === undefined || duration === null) return '';
     // Display duration exactly as it appears in the data
     return `${duration} minutes`;
   };
 
   // Format difficulty level to preserve exact user input
-  const formatDifficulty = (level) => {
+  const formatDifficulty = level => {
     if (!level) return '';
     // Display level exactly as it appears in the data
     return level;

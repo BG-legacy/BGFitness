@@ -49,13 +49,13 @@ const WorkoutPlan = () => {
   };
 
   // Custom handler for duration to ensure it's stored as entered
-  const handleDurationChange = (e) => {
+  const handleDurationChange = e => {
     const value = e.target.value;
     handleChange({
       target: {
         name: 'duration',
-        value: value // Store as string to preserve exactly what user entered
-      }
+        value: value, // Store as string to preserve exactly what user entered
+      },
     });
   };
 
