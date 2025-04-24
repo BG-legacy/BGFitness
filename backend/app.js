@@ -20,7 +20,7 @@ const app = express();
  * These middleware functions process requests before they reach route handlers
  */
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow requests from frontend development server
+  origin: ['http://localhost:3000', 'https://bg-fitness-seven.vercel.app'], // Allow requests from frontend servers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed request headers
   credentials: true // Allow credentials (cookies, authorization headers)
