@@ -377,4 +377,165 @@ input[type="number"]::-webkit-inner-spin-button {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .tdee-calculator {
+    padding: var(--space-md);
+    margin: 0 calc(-1 * var(--space-md));
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .form-section {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .form-group {
+    margin-bottom: var(--space-lg);
+  }
+
+  .form-group label {
+    font-size: 18px;
+    margin-bottom: var(--space-sm);
+  }
+
+  .input-with-unit input,
+  .form-group input,
+  .form-group select {
+    font-size: 18px;
+    padding: var(--space-md);
+    height: 56px;
+  }
+
+  .input-with-unit select {
+    font-size: 18px;
+    padding: var(--space-sm) var(--space-md);
+    height: 56px;
+  }
+
+  .imperial-height {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .feet-input,
+  .inches-input {
+    width: 100%;
+  }
+
+  .feet-input input,
+  .inches-input input {
+    width: 100%;
+    font-size: 18px;
+    padding: var(--space-md);
+    height: 56px;
+  }
+
+  .results-section {
+    padding: var(--space-md);
+    margin: 0 var(--space-md);
+    border-radius: var(--radius-md);
+  }
+
+  .result-card {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .result-item {
+    padding: var(--space-md);
+  }
+
+  .result-item h4 {
+    font-size: 14px;
+  }
+
+  .result-item p {
+    font-size: 20px;
+  }
+
+  .macro-container {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .macro-item {
+    width: 100%;
+  }
+
+  .macro-circle {
+    width: 60px;
+    height: 60px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-group label {
+    font-size: 16px;
+  }
+
+  .input-with-unit input,
+  .form-group input,
+  .form-group select,
+  .feet-input input,
+  .inches-input input {
+    font-size: 16px;
+    padding: var(--space-sm);
+    height: 48px;
+  }
+
+  .input-with-unit select {
+    font-size: 16px;
+    padding: var(--space-xs) var(--space-sm);
+    height: 48px;
+  }
+
+  .result-item p {
+    font-size: 18px;
+  }
+
+  .macro-circle {
+    width: 50px;
+    height: 50px;
+    font-size: 14px;
+  }
+
+  /* Touch-friendly styles */
+  .input-with-unit input,
+  .form-group input,
+  .form-group select,
+  .feet-input input,
+  .inches-input input {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent text size adjustment on orientation change */
+  .tdee-calculator {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-height: 480px) and (orientation: landscape) {
+  .form-section {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .input-with-unit input,
+  .form-group input,
+  .form-group select {
+    height: 44px;
+    padding: var(--space-xs);
+  }
+
+  .imperial-height {
+    flex-direction: row;
+  }
 } 

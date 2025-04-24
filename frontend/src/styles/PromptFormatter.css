@@ -228,12 +228,273 @@
 }
 
 @media (max-width: 768px) {
+  .prompt-formatter {
+    padding: var(--space-sm);
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .prompt-formatter h2 {
+    font-size: 20px;
+    margin-bottom: var(--space-sm);
+    padding: 0 var(--space-sm);
+  }
+
+  .prompt-formatter > p {
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 0 var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  .form-container {
+    padding: var(--space-sm);
+    margin: 0;
+    border-radius: 0;
+    background: var(--rich-black);
+  }
+
+  .form-section {
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+  }
+
+  .form-section:last-child {
+    border-bottom: none;
+  }
+
+  .form-section h3 {
+    font-size: 15px;
+    margin-bottom: var(--space-xs);
+    color: var(--accent-color);
+  }
+
   .form-row {
     flex-direction: column;
-    gap: 0;
+    gap: var(--space-sm);
   }
-  
+
+  .form-group {
+    margin-bottom: var(--space-sm);
+  }
+
+  .form-group label {
+    font-size: 13px;
+    margin-bottom: var(--space-xs);
+    color: var(--text-secondary);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 15px;
+    padding: var(--space-sm);
+    height: 44px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    border-radius: var(--radius-sm);
+  }
+
+  .form-group textarea {
+    height: 100px;
+    resize: vertical;
+    min-height: 100px;
+    max-height: 200px;
+  }
+
   .button-group {
     flex-direction: column;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-sm);
+  }
+
+  .button-group button {
+    width: 100%;
+    padding: var(--space-sm);
+    font-size: 14px;
+    height: 44px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .button-group button.active {
+    background: var(--accent-color);
+    color: var(--dark-black);
+  }
+
+  .generate-button {
+    width: 100%;
+    padding: var(--space-sm);
+    font-size: 15px;
+    height: 48px;
+    margin: var(--space-sm) 0;
+    background: var(--accent-color);
+    color: var(--dark-black);
+    border: none;
+  }
+
+  .prompt-output {
+    padding: var(--space-sm);
+    margin: 0;
+    border-radius: 0;
+    background: var(--rich-black);
+  }
+
+  .prompt-output h3 {
+    font-size: 15px;
+    margin-bottom: var(--space-xs);
+    color: var(--accent-color);
+  }
+
+  .prompt-output pre {
+    font-size: 13px;
+    padding: var(--space-sm);
+    line-height: 1.4;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .copy-button {
+    width: 100%;
+    padding: var(--space-sm);
+    font-size: 14px;
+    height: 44px;
+    background: var(--accent-color);
+    color: var(--dark-black);
+    border: none;
+    margin-top: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .prompt-formatter {
+    padding: var(--space-xs);
+  }
+
+  .prompt-formatter h2 {
+    font-size: 18px;
+  }
+
+  .prompt-formatter > p {
+    font-size: 13px;
+  }
+
+  .form-container {
+    padding: var(--space-xs);
+  }
+
+  .form-section h3 {
+    font-size: 14px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 14px;
+    padding: var(--space-xs);
+    height: 40px;
+  }
+
+  .form-group textarea {
+    height: 80px;
+    min-height: 80px;
+  }
+
+  .button-group button,
+  .generate-button,
+  .copy-button {
+    font-size: 13px;
+    height: 40px;
+  }
+
+  .prompt-output pre {
+    font-size: 12px;
+    padding: var(--space-xs);
+  }
+
+  /* Touch-friendly styles */
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .button-group button,
+  .generate-button,
+  .copy-button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .button-group button:active,
+  .generate-button:active,
+  .copy-button:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  /* Prevent text size adjustment on orientation change */
+  .prompt-formatter {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Improve scrolling performance */
+  .prompt-output pre {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-height: 480px) and (orientation: landscape) {
+  .prompt-formatter {
+    padding: var(--space-xs);
+  }
+
+  .form-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .form-group {
+    flex: 1 1 calc(50% - var(--space-xs));
+    min-width: 0;
+  }
+
+  .form-group textarea {
+    height: 60px;
+    min-height: 60px;
+  }
+
+  .button-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .button-group button {
+    flex: 1 1 calc(50% - var(--space-xs));
+  }
+
+  .prompt-output pre {
+    max-height: 100px;
+    overflow-y: auto;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    color-scheme: dark;
   }
 } 

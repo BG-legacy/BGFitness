@@ -300,42 +300,59 @@ button:disabled {
 @media (max-width: 768px) {
   .mobile-header {
     display: flex;
+    padding: var(--space-md) var(--space-lg);
+    background-color: var(--rich-black);
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
   }
-  
+
   .sidebar {
     transform: translateX(-100%);
     width: 100%;
     max-width: 300px;
   }
-  
+
   .app-container.menu-open .sidebar {
     transform: translateX(0);
   }
-  
+
   .app-container.menu-open:after {
     content: '';
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 90;
-    animation: fadeIn 0.3s ease-out;
+    z-index: 99;
   }
-  
+
   .main-content {
     margin-left: 0;
     width: 100%;
     padding: var(--space-lg);
   }
-  
+
   .page-header h1 {
     font-size: 28px;
   }
-  
+
   .page-header .subtitle {
     font-size: 16px;
+  }
+
+  .side-nav button {
+    padding: var(--space-lg) var(--space-xl);
+    font-size: 18px;
+  }
+
+  .side-nav .icon {
+    font-size: 24px;
   }
 }
 
@@ -343,13 +360,50 @@ button:disabled {
   .main-content {
     padding: var(--space-md);
   }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .page-header .subtitle {
+    font-size: 14px;
+  }
+
+  .content-container {
+    border-radius: var(--radius-md);
+  }
+
+  button {
+    padding: var(--space-md) var(--space-lg);
+    font-size: 16px;
+    min-height: 48px; /* Better touch target size */
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: var(--space-md);
+  }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+/* Touch-friendly styles */
+@media (hover: none) {
+  button:hover {
+    transform: none;
   }
-  to {
-    opacity: 1;
+
+  .side-nav button:hover {
+    background-color: transparent;
   }
+
+  .side-nav button:active {
+    background-color: var(--subtle-bg);
+  }
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }

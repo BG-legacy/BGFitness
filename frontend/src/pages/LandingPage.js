@@ -46,7 +46,7 @@ const LandingPage = () => {
             className="placeholder-image"
             onError={e => {
               e.target.onerror = null;
-              e.target.src = 'https://placehold.co/600x400/000000/FFD700?text=BG+Fitness';
+              e.target.src = 'https://placehold.co/400x300/000000/FFD700?text=BG+Fitness';
             }}
           />
         </div>

@@ -6,6 +6,7 @@
   background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
   position: relative;
   overflow: hidden;
+  padding: var(--space-md) 0;
 }
 
 .landing-page::before {
@@ -35,7 +36,7 @@
 
 .landing-content {
   text-align: center;
-  padding: 2rem;
+  padding: 1rem;
   max-width: 1200px;
   width: 100%;
   position: relative;
@@ -43,6 +44,10 @@
   opacity: 0;
   transform: translateY(20px);
   animation: fadeSlideUp 1s ease forwards;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
 }
 
 .landing-content.animated {
@@ -53,7 +58,8 @@
 .image-container {
   position: relative;
   margin: 0 auto;
-  max-width: 800px;
+  max-width: 500px;
+  width: 80%;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
@@ -88,13 +94,13 @@
 }
 
 .tagline {
-  margin: 2rem 0;
-  padding: 1rem;
+  margin: 1rem 0;
+  padding: 0.5rem;
   position: relative;
 }
 
 .tagline h2 {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
@@ -103,14 +109,15 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shine 3s ease-in-out infinite;
+  line-height: 1.2;
 }
 
 .enter-button {
   background: linear-gradient(45deg, #000000, #1a1a1a);
   color: #FFD700;
   border: 2px solid #FFD700;
-  padding: 1rem 3rem;
-  font-size: 1.2rem;
+  padding: 0.8rem 2.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
   border-radius: 30px;
   cursor: pointer;
@@ -120,6 +127,7 @@
   animation: buttonAppear 1s ease forwards;
   animation-delay: 0.5s;
   opacity: 0;
+  margin-top: 0.5rem;
 }
 
 .enter-button:hover {
@@ -217,6 +225,14 @@
 }
 
 @media (max-width: 768px) {
+  .landing-page {
+    padding: var(--space-sm) 0;
+  }
+
+  .landing-content {
+    gap: var(--space-md);
+  }
+
   .tagline h2 {
     font-size: 1.8rem;
   }
@@ -226,7 +242,59 @@
     font-size: 1rem;
   }
   
+  .image-container {
+    max-width: 85%;
+    width: 80%;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-page {
+    padding: var(--space-xs) 0;
+  }
+
   .landing-content {
-    padding: 1rem;
+    gap: var(--space-sm);
+  }
+
+  .image-container {
+    max-width: 90%;
+    width: 85%;
+    border-radius: 15px;
+  }
+
+  .tagline h2 {
+    font-size: 1.5rem;
+  }
+
+  .enter-button {
+    padding: 0.7rem 1.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .landing-page {
+    padding: var(--space-xs) 0;
+  }
+
+  .landing-content {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-md);
+  }
+
+  .image-container {
+    max-width: 40%;
+    width: 35%;
+  }
+
+  .tagline {
+    text-align: left;
+    margin: 0;
+  }
+
+  .enter-button {
+    margin-top: var(--space-sm);
   }
 } 

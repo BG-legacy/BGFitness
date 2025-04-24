@@ -198,41 +198,82 @@
 
 /* Responsive styles */
 @media (max-width: 768px) {
+  .utility-tabs-container {
+    margin: 0 calc(-1 * var(--space-md)) var(--space-lg);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
   .utility-tabs {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-sm);
+    justify-content: flex-start;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  .utility-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
   
   .utility-tabs button {
-    padding: var(--space-sm) var(--space-md);
-    flex: 1;
-    min-width: 120px;
+    padding: var(--space-md) var(--space-lg);
+    flex: 0 0 auto;
+    min-width: 140px;
+    white-space: nowrap;
+    font-size: 15px;
+    height: 48px; /* Better touch target */
   }
   
   .utility-section {
     padding: var(--space-lg);
+    margin: 0 calc(-1 * var(--space-md));
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
   
+  .utility-intro {
+    padding: 0 var(--space-md);
+  }
+
   .utility-intro p {
     max-width: 100%;
+    font-size: 15px;
+    line-height: 1.5;
   }
   
   .utility-component {
     padding: var(--space-md);
+    margin: 0 var(--space-md);
+    border-radius: var(--radius-md);
+  }
+
+  .utility-icon {
+    width: 70px;
+    height: 70px;
+    font-size: 32px;
   }
 }
 
 @media (max-width: 480px) {
   .utility-tabs button {
+    min-width: 120px;
+    padding: var(--space-sm) var(--space-md);
     font-size: 14px;
-    padding: var(--space-sm);
-  }
-  
-  .tab-text {
-    display: none;
+    height: 44px;
   }
   
   .tab-icon {
-    font-size: 24px;
+    font-size: 20px;
+    margin-right: var(--space-xs);
+  }
+  
+  .tab-text {
+    display: inline;
   }
   
   .utility-icon {
@@ -242,6 +283,53 @@
   }
   
   .utility-intro h2 {
+    font-size: 22px;
+    margin: var(--space-xs) 0;
+  }
+
+  .utility-intro p {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  /* Touch-friendly styles */
+  .utility-tabs button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .utility-tabs button:active {
+    transform: scale(0.98);
+  }
+
+  /* Prevent text size adjustment on orientation change */
+  .utility-demo {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-height: 480px) and (orientation: landscape) {
+  .utility-tabs {
+    padding: var(--space-xs);
+  }
+
+  .utility-tabs button {
+    height: 40px;
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .utility-section {
+    padding: var(--space-md);
+  }
+
+  .utility-intro {
+    margin-bottom: var(--space-md);
+  }
+
+  .utility-icon {
+    width: 50px;
+    height: 50px;
     font-size: 24px;
   }
 } 
