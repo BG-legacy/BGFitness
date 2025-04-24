@@ -2,14 +2,21 @@ require('dotenv').config();
 
 module.exports = {
     apiKey: process.env.OPENAI_API_KEY,
-    model: 'gpt-3.5-turbo-0125',
-    maxTokens: 1500,
-    temperature: 0.5,
+    model: process.env.OPENAI_MODEL || 'gpt-4-turbo',
+    fallbackModel: 'gpt-3.5-turbo-0125',
+    maxTokens: 1200,
+    temperature: 0.3,
     retryConfig: {
-        maxRetries: 2,
-        initialDelay: 500,
-        maxDelay: 5000,
-        backoffFactor: 2,
+        maxRetries: 3,
+        initialDelay: 300,
+        maxDelay: 3000,
+        backoffFactor: 1.5,
     },
-    timeout: 30000,
+    timeout: 25000,
+    streaming: true,
+    cache: {
+        enabled: true,
+        ttl: 300000,
+        maxSize: 100,
+    }
 }; 

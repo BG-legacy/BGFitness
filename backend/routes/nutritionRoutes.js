@@ -59,6 +59,43 @@ router.post('/', validateNutritionInput, async (req, res, next) => {
 });
 
 /**
+ * POST /api/nutrition/stream
+ * Streams a personalized meal plan response directly to client
+ * Uses streaming for real-time updates and faster perceived performance
+ */
+router.post('/stream', validateNutritionInput, async (req, res, next) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        
+        // Setup headers for streaming
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        
+        // Prepare input with mobile detection
+        const nutritionInput = {
+            ...req.body,
+            isMobile: req.isMobile || false
+        };
+        
+        // Call controller with res object for streaming
+        await nutritionController.generateMealPlan(nutritionInput, res);
+        
+        // Note: The response is handled in the controller
+    } catch (error) {
+        // Only send error if headers haven't been sent
+        if (!res.headersSent) {
+            next(error);
+        } else {
+            console.error('Error during meal plan streaming:', error);
+        }
+    }
+});
+
+/**
  * GET /api/nutrition/download/:format
  * Downloads the generated meal plan in the specified format (PDF or CSV)
  * Retrieves the plan from session or request body

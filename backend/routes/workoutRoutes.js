@@ -61,6 +61,45 @@ router.post('/', validateWorkoutInput, async (req, res, next) => {
 });
 
 /**
+ * POST /api/workout/stream
+ * Streams a personalized workout plan response directly to client
+ * Uses SSE (Server-Sent Events) for real-time updates
+ */
+router.post('/stream', validateWorkoutInput, async (req, res, next) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        
+        // Setup headers for streaming
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        
+        // Prepare input with mobile detection
+        const workoutInput = {
+            ...req.body,
+            duration: req.body.duration,
+            level: req.body.level,
+            isMobile: req.isMobile || false
+        };
+        
+        // Call controller with res object for streaming
+        await workoutController.generateWorkoutPlan(workoutInput, res);
+        
+        // Note: The response is handled in the controller
+    } catch (error) {
+        // Only send error if headers haven't been sent
+        if (!res.headersSent) {
+            next(error);
+        } else {
+            console.error('Error during workout streaming:', error);
+        }
+    }
+});
+
+/**
  * GET /api/workout/download/:format
  * Downloads the generated workout plan in the specified format (PDF or CSV)
  * Retrieves the plan from session or request body

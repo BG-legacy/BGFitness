@@ -3,10 +3,24 @@ const { nutritionSystemPrompt } = require('../ai/prompts');
 const PDFDocument = require('pdfkit');
 
 class NutritionController {
-    async generateMealPlan(input) {
+    async generateMealPlan(input, res = null) {
         try {
             // Detect if request is from mobile
             const isMobile = input.isMobile || false;
+            
+            // Optimize input by adding calculated calorie estimates
+            if (input.weight && input.height && input.age) {
+                input.estimatedCalories = this.calculateEstimatedCalories(input);
+                
+                // Add estimated macros for more accurate plans
+                const macros = this.generateDefaultMacros(input);
+                input.estimatedMacros = macros;
+            }
+            
+            // If express response object is provided, stream the response
+            if (res) {
+                return await openaiService.generateResponse(input, nutritionSystemPrompt, isMobile, res);
+            }
             
             // Generate the meal plan with the mobile flag
             const response = await openaiService.generateResponse(input, nutritionSystemPrompt, isMobile);
@@ -14,6 +28,16 @@ class NutritionController {
             return response;
         } catch (error) {
             console.error('Error generating meal plan:', error);
+            
+            // If streaming, handle error in response
+            if (res && !res.headersSent) {
+                return res.status(500).json({
+                    error: true,
+                    errorMessage: 'Failed to generate meal plan',
+                    errorDetails: error.message
+                });
+            }
+            
             throw new Error('Failed to generate meal plan');
         }
     }

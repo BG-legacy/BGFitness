@@ -9,7 +9,7 @@ const MAX_HISTORY_SIZE = 5; // Keep track of last 5 workouts per user
 const WORKOUT_HISTORY_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 class WorkoutController {
-    async generateWorkoutPlan(input) {
+    async generateWorkoutPlan(input, res = null) {
         try {
             // Get or create workout history for this user
             // For now, we'll use a simple hash of the input as a user identifier
@@ -40,7 +40,23 @@ class WorkoutController {
             // Detect if request is from mobile
             const isMobile = input.isMobile || false;
             
-            // Generate the workout plan
+            // Additional optimization - send specific equipment and restrictions
+            if (input.equipment) {
+                inputWithHistory.availableEquipment = Array.isArray(input.equipment) ? 
+                    input.equipment : [input.equipment];
+            }
+            
+            if (input.restrictions) {
+                inputWithHistory.exerciseRestrictions = Array.isArray(input.restrictions) ? 
+                    input.restrictions : [input.restrictions];
+            }
+            
+            // If express response object is provided, stream the response
+            if (res) {
+                return await openaiService.generateResponse(inputWithHistory, workoutSystemPrompt, isMobile, res);
+            }
+            
+            // Otherwise generate normally
             const response = await openaiService.generateResponse(inputWithHistory, workoutSystemPrompt, isMobile);
             
             // Ensure we preserve the exact user input values
@@ -67,6 +83,16 @@ class WorkoutController {
             return response;
         } catch (error) {
             console.error('Error generating workout plan:', error);
+            
+            // If streaming, handle error in response
+            if (res && !res.headersSent) {
+                return res.status(500).json({
+                    error: true,
+                    errorMessage: 'Failed to generate workout plan',
+                    errorDetails: error.message
+                });
+            }
+            
             throw new Error('Failed to generate workout plan');
         }
     }
