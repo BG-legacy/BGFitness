@@ -48,8 +48,9 @@ const responseCache = new LRUCache(config.cache.maxSize || 100);
 const CACHE_TTL = config.cache.ttl || 300000; // 5 minutes (300000 ms)
 
 // Set higher timeouts for mobile clients
-const MOBILE_TIMEOUT = 60000; // 60 seconds for mobile
-const STANDARD_TIMEOUT = config.timeout || 30000; // Default 30 seconds
+const MOBILE_TIMEOUT = 30000; // Reduced from 60000 to 30000 (30 seconds for mobile)
+const STANDARD_TIMEOUT = config.timeout || 20000; // Reduced from 30000 to 20000 (20 seconds default)
+const NUTRITION_TIMEOUT = 15000; // Special shorter timeout for nutrition requests
 
 /**
  * Advanced JSON repair function to handle common JSON parsing errors
@@ -166,8 +167,9 @@ class OpenAIService {
     async generateResponse(prompt, systemMessage, isMobile = false, res = null) {
         const sanitizedPrompt = this.sanitizeInput(prompt);
         
-        // Check if this is a workout request - if so, add randomness to avoid caching
+        // Check if this is a workout request or nutrition request
         const isWorkoutRequest = systemMessage.includes('workout plan generator');
+        const isNutritionRequest = systemMessage.includes('meal plan generator');
         
         // Optimize system message for faster processing and better accuracy
         const optimizedSystemMessage = this.optimizePrompt(systemMessage, sanitizedPrompt);
@@ -181,50 +183,80 @@ class OpenAIService {
             random: isWorkoutRequest ? Date.now() + Math.random() : undefined
         });
         
+        // For nutrition requests, check cache even with streaming
+        const useCache = config.cache.enabled && 
+                        !isWorkoutRequest && 
+                        (!res || isNutritionRequest);
+        
         // Check cache first - optimized caching
-        // Skip cache for workout requests to ensure variety
-        if (config.cache.enabled && !isWorkoutRequest && !res) { // Don't use cache for streaming
+        if (useCache) {
             const cachedItem = responseCache.get(cacheKey);
             if (cachedItem && Date.now() - cachedItem.timestamp < CACHE_TTL) {
                 console.log('Cache hit, returning cached response');
+                
+                // If streaming, we need to simulate streaming with the cached response
+                if (res && config.streaming) {
+                    return this.streamCachedResponse(cachedItem.data, res);
+                }
+                
                 return cachedItem.data;
             }
         }
 
         // Handle streaming response if response object is provided
         if (res && config.streaming) {
-            return this.streamResponse(sanitizedPrompt, optimizedSystemMessage, isMobile, res);
+            return this.streamResponse(sanitizedPrompt, optimizedSystemMessage, isMobile, res, isNutritionRequest);
         }
 
         const makeApiCall = async () => {
             try {
                 // Get client with appropriate timeout
-                const client = this.getClient(isMobile);
+                // Use shorter timeout for nutrition requests
+                const timeout = isNutritionRequest ? NUTRITION_TIMEOUT : 
+                               (isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT);
+                
+                const client = new OpenAI({
+                    apiKey: config.apiKey,
+                    timeout: timeout,
+                    maxRetries: isMobile ? 3 : config.retryConfig.maxRetries || 2,
+                });
                 
                 // Simplified prompt structure for faster processing
                 const simplifiedPrompt = {};
-                const importantFields = ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 
-                                         'fitnessGoal', 'level', 'duration', 'equipment', 'restrictions',
-                                         'workoutType', 'previousWorkouts', 'preferences'];
-                for (const field of importantFields) {
+                
+                // For nutrition, only include essential fields
+                const fields = isNutritionRequest ? 
+                    ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 'estimatedCalories', 'estimatedMacros'] :
+                    ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 
+                    'fitnessGoal', 'level', 'duration', 'equipment', 'restrictions',
+                    'workoutType', 'previousWorkouts', 'preferences'];
+                    
+                for (const field of fields) {
                     if (sanitizedPrompt[field] !== undefined) {
                         simplifiedPrompt[field] = sanitizedPrompt[field];
                     }
                 }
                 
-                // For mobile clients, set a smaller max_tokens to speed up response time
-                const maxTokens = isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens;
+                // For nutrition requests, set a smaller max_tokens for faster response
+                const maxTokens = isNutritionRequest ? 800 :
+                               (isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens);
+                
+                // For nutrition, increase temperature slightly for faster response (less precise but quicker)
+                const temperature = isNutritionRequest ? 0.5 : config.temperature;
                 
                 // Try with the primary model first
                 try {
+                    // Use different model settings for nutrition
+                    const modelToUse = isNutritionRequest ? config.fallbackModel : config.model;
+                    
                     const response = await client.chat.completions.create({
-                        model: config.model,
+                        model: modelToUse,
                         messages: [
                             { role: 'system', content: optimizedSystemMessage },
                             { role: 'user', content: JSON.stringify(simplifiedPrompt) }
                         ],
                         max_tokens: maxTokens,
-                        temperature: config.temperature,
+                        temperature: temperature,
                         response_format: { type: 'json_object' }
                     });
                     
@@ -245,6 +277,11 @@ class OpenAIService {
                     }
                 } catch (primaryModelError) {
                     // If primary model fails, fall back to the backup model
+                    // Skip this step for nutrition as we're already using the fallback model
+                    if (isNutritionRequest) {
+                        throw primaryModelError; // Just propagate the error for nutrition
+                    }
+                    
                     console.warn(`Primary model failed: ${primaryModelError.message}. Falling back to ${config.fallbackModel}`);
                     
                     const fallbackResponse = await client.chat.completions.create({
@@ -254,7 +291,7 @@ class OpenAIService {
                             { role: 'user', content: JSON.stringify(simplifiedPrompt) }
                         ],
                         max_tokens: maxTokens,
-                        temperature: config.temperature,
+                        temperature: temperature,
                         response_format: { type: 'json_object' }
                     });
                     
@@ -273,14 +310,20 @@ class OpenAIService {
             }
         };
 
-        // Configure retry with longer delays for mobile
-        const retryConfig = isMobile ? 
+        // Configure retry with shorter delays for nutrition
+        const retryConfig = isNutritionRequest ? 
+            { 
+                maxRetries: 2, 
+                initialDelay: 500, 
+                maxDelay: 2000, 
+                backoffFactor: 1.2 
+            } : (isMobile ? 
             { 
                 maxRetries: 4, 
                 initialDelay: 1000, 
                 maxDelay: 10000, 
                 backoffFactor: 1.5 
-            } : config.retryConfig;
+            } : config.retryConfig);
 
         try {
             // Get response with retry mechanism
@@ -297,6 +340,14 @@ class OpenAIService {
             return result;
         } catch (error) {
             console.error('Failed after multiple retries:', error.message);
+            
+            // For nutrition, return a simplified fallback meal plan
+            if (isNutritionRequest) {
+                console.log('Using fallback meal plan generator');
+                // This will be handled by the nutrition controller's fallback mechanism
+                throw new Error('nutrition_fallback_needed');
+            }
+            
             // Return a simplified response that won't break the client UI
             return {
                 title: "Connection Error",
@@ -308,13 +359,57 @@ class OpenAIService {
     }
 
     /**
+     * Stream a cached response to the client
+     * @param {Object} cachedData - The cached response data
+     * @param {Object} res - Express response object
+     */
+    async streamCachedResponse(cachedData, res) {
+        try {
+            // Set up streaming headers
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Cache-Control', 'no-cache');
+            
+            // Send a complete response with the cached data, but marked as from cache
+            res.write(JSON.stringify({
+                streaming: false,
+                fromCache: true,
+                complete: cachedData
+            }));
+            
+            res.end();
+            
+            return { streaming: false, fromCache: true, complete: true };
+        } catch (error) {
+            console.error('Error streaming cached response:', error);
+            
+            // Handle error gracefully
+            if (!res.headersSent) {
+                res.status(500).json({
+                    error: true,
+                    errorType: 'streaming',
+                    errorMessage: 'Error streaming cached response'
+                });
+            } else {
+                try {
+                    res.end();
+                } catch (e) {
+                    console.error('Failed to end response stream:', e);
+                }
+            }
+            
+            return { streaming: false, error: true };
+        }
+    }
+
+    /**
      * Stream OpenAI response directly to client
      * @param {Object} prompt - Input data
      * @param {String} systemMessage - System message
      * @param {Boolean} isMobile - Mobile optimization flag
      * @param {Object} res - Express response object
+     * @param {Boolean} isNutrition - Whether this is a nutrition request
      */
-    async streamResponse(prompt, systemMessage, isMobile, res) {
+    async streamResponse(prompt, systemMessage, isMobile, res, isNutrition = false) {
         try {
             // Set up streaming headers
             res.setHeader('Content-Type', 'application/json');
@@ -324,33 +419,48 @@ class OpenAIService {
             let jsonBuffer = '';
             let isJsonComplete = false;
             
-            // Get client with appropriate timeout
-            const client = this.getClient(isMobile);
+            // Get client with appropriate timeout - use shorter timeout for nutrition
+            const timeout = isNutrition ? NUTRITION_TIMEOUT : 
+                          (isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT);
+            
+            const client = new OpenAI({
+                apiKey: config.apiKey,
+                timeout,
+                maxRetries: isMobile ? 2 : 1, // Lower for streaming
+            });
             
             // Simplified prompt for faster processing
             const simplifiedPrompt = {};
-            const importantFields = ['weight', 'height', 'age', 'goal', 'activityLevel', 
-                                     'dietaryRestrictions', 'fitnessGoal', 'level', 'duration', 
-                                     'equipment', 'restrictions', 'workoutType', 'previousWorkouts'];
             
-            for (const field of importantFields) {
+            // Use fewer fields for nutrition requests
+            const fields = isNutrition ? 
+                ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 'estimatedCalories', 'estimatedMacros'] :
+                ['weight', 'height', 'age', 'goal', 'activityLevel', 
+                 'dietaryRestrictions', 'fitnessGoal', 'level', 'duration', 
+                 'equipment', 'restrictions', 'workoutType', 'previousWorkouts'];
+            
+            for (const field of fields) {
                 if (prompt[field] !== undefined) {
                     simplifiedPrompt[field] = prompt[field];
                 }
             }
 
-            // For mobile clients, set a smaller max_tokens to speed up response time
-            const maxTokens = isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens;
+            // Use a smaller token limit for nutrition streaming
+            const maxTokens = isNutrition ? 800 :
+                            (isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens);
+            
+            // Use the fallback model for nutrition requests to speed up response
+            const modelToUse = isNutrition ? config.fallbackModel : config.model;
             
             // Create the streaming request
             const stream = await client.chat.completions.create({
-                model: config.model,
+                model: modelToUse,
                 messages: [
                     { role: 'system', content: systemMessage },
                     { role: 'user', content: JSON.stringify(simplifiedPrompt) }
                 ],
                 max_tokens: maxTokens,
-                temperature: config.temperature,
+                temperature: isNutrition ? 0.5 : config.temperature, // Higher temp for faster nutrition responses
                 response_format: { type: 'json_object' },
                 stream: true
             });
@@ -394,6 +504,19 @@ class OpenAIService {
                 
                 // Mark JSON as complete
                 isJsonComplete = true;
+                
+                // Cache this successful response for nutrition requests
+                if (isNutrition && config.cache.enabled) {
+                    const cacheKey = JSON.stringify({
+                        prompt,
+                        systemMessage
+                    });
+                    
+                    responseCache.set(cacheKey, {
+                        data: parsedResponse,
+                        timestamp: Date.now()
+                    });
+                }
             } catch (jsonError) {
                 console.error('Error parsing streaming JSON:', jsonError);
                 
