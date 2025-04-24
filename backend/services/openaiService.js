@@ -237,12 +237,12 @@ class OpenAIService {
                     }
                 }
                 
-                // For nutrition requests, set a smaller max_tokens for faster response
-                const maxTokens = isNutritionRequest ? 800 :
+                // For nutrition requests, use optimized token settings
+                const maxTokens = isNutritionRequest ? config.nutritionMaxTokens || 700 :
                                (isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens);
                 
-                // For nutrition, increase temperature slightly for faster response (less precise but quicker)
-                const temperature = isNutritionRequest ? 0.5 : config.temperature;
+                // For nutrition, use optimized temperature for balance of speed and accuracy
+                const temperature = isNutritionRequest ? config.nutritionTemperature || 0.4 : config.temperature;
                 
                 // Try with the primary model first
                 try {

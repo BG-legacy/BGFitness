@@ -10,44 +10,12 @@ const router = express.Router();
 const nutritionController = require('../controllers/nutritionController');
 
 /**
- * Timeout middleware for nutrition routes
- * Ensures routes respond within specified timeframe
+ * Cache middleware for nutrition responses
+ * Improves performance by caching successful responses
  */
-const timeoutMiddleware = (req, res, next) => {
-    // Set a short timeout for nutrition routes - 15 seconds
-    const TIMEOUT = 15000;
-    
-    // Create a timeout that will respond with a 408 Request Timeout if triggered
-    const timeoutId = setTimeout(() => {
-        if (!res.headersSent) {
-            console.log('Nutrition route timed out - sending fallback response');
-            
-            // Get input from request body
-            const input = req.body;
-            
-            // Generate fallback meal plan directly from the controller
-            try {
-                const fallbackPlan = nutritionController.createFallbackMealPlan(input);
-                res.json({
-                    ...fallbackPlan,
-                    timeout: true,
-                    message: "Response was taking too long, so we generated a quick plan for you. Try again later for a more detailed plan."
-                });
-            } catch (error) {
-                res.status(408).json({
-                    error: true,
-                    errorType: "timeout",
-                    errorMessage: "Request timed out. Please try again later."
-                });
-            }
-        }
-    }, TIMEOUT);
-    
-    // Clear the timeout when the response is sent
-    res.on('finish', () => {
-        clearTimeout(timeoutId);
-    });
-    
+const cacheMiddleware = (req, res, next) => {
+    // Set cache headers for better performance
+    res.setHeader('Cache-Control', 'private, max-age=300'); // 5 minute cache
     next();
 };
 
@@ -75,7 +43,7 @@ const validateNutritionInput = [
  * Generates a personalized meal plan based on user input
  * Validates input, generates plan, and stores it in session for download
  */
-router.post('/', timeoutMiddleware, validateNutritionInput, async (req, res, next) => {
+router.post('/', cacheMiddleware, validateNutritionInput, async (req, res, next) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -89,7 +57,6 @@ router.post('/', timeoutMiddleware, validateNutritionInput, async (req, res, nex
             isMobile: req.isMobile || false
         };
         
-        // Set a short timeout for the request
         const mealPlan = await nutritionController.generateMealPlan(nutritionInput);
         
         // Store the meal plan in session for download route
@@ -106,7 +73,7 @@ router.post('/', timeoutMiddleware, validateNutritionInput, async (req, res, nex
  * Streams a personalized meal plan response directly to client
  * Uses streaming for real-time updates and faster perceived performance
  */
-router.post('/stream', timeoutMiddleware, validateNutritionInput, async (req, res, next) => {
+router.post('/stream', validateNutritionInput, async (req, res, next) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {

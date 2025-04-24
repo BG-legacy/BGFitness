@@ -10,6 +10,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
+const compression = require('compression');
+const helmet = require('helmet');
 const errorHandler = require('./middleware/errorHandler');
 const mobileDetect = require('./middleware/mobileDetect');
 const workoutRoutes = require('./routes/workoutRoutes');
@@ -19,6 +21,21 @@ const diagnosticsRoutes = require('./routes/diagnostics');
 
 // Initialize Express application
 const app = express();
+
+/**
+ * Performance Middleware
+ * These middleware functions optimize performance and security
+ */
+// Compression middleware to reduce response size
+app.use(compression({
+  level: 6, // Balance between compression and CPU usage
+  threshold: 1024, // Only compress responses larger than 1KB
+}));
+
+// Security headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP in development for easier testing
+}));
 
 /**
  * Middleware Configuration
@@ -51,8 +68,17 @@ app.use(cors({
   credentials: true, // Allow credentials (cookies, authorization headers)
   exposedHeaders: ['Content-Type', 'Authorization'] // Expose these headers to client
 }));
-app.use(express.json()); // Parse JSON request bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
+
+// Increase JSON parse limit for request bodies but set reasonable limits
+app.use(express.json({ 
+  limit: '2mb', // Limit payload size to prevent abuse
+  strict: true // Only parse arrays and objects
+})); 
+
+app.use(express.urlencoded({ 
+  extended: true,
+  limit: '2mb' // Consistent with JSON limit
+}));
 
 // Add mobile detection middleware
 app.use(mobileDetect);
@@ -62,7 +88,7 @@ app.use(mobileDetect);
  * Sets up user session management with secure cookie settings
  */
 app.use(session({
-  secret: 'bg-fitness-session-secret', // Secret key for session encryption
+  secret: process.env.SESSION_SECRET || 'bg-fitness-session-secret', // Secret key for session encryption
   resave: false, // Don't save session if unmodified
   saveUninitialized: true, // Save new sessions
   cookie: { 
