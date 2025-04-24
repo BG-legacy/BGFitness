@@ -1,0 +1,3 @@
+# Temporarily disabling formatting for these files
+src/components/NutritionPlanDisplay.js
+src/components/PromptFormatter.js

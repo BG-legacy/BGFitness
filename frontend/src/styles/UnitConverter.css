@@ -1,0 +1,124 @@
+.unit-converter {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--card-background);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+}
+
+.unit-converter h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.converter-section {
+  background-color: var(--secondary-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.converter-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--accent-color);
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.converter-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.converter-input {
+  flex: 1;
+}
+
+.converter-imperial {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+.feet-input,
+.inches-input {
+  flex: 1;
+}
+
+.converter-equals {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--accent-color);
+  margin: 0 10px;
+}
+
+.converter-input label,
+.feet-input label,
+.inches-input label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.converter-input input,
+.feet-input input,
+.inches-input input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+.converter-input input:focus,
+.feet-input input:focus,
+.inches-input input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+
+.formatted-output {
+  background-color: var(--secondary-color);
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-size: 16px;
+  color: var(--text-color);
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.formatted-output p {
+  margin: 0;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .converter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .converter-equals {
+    margin: 10px 0;
+    text-align: center;
+  }
+} 
