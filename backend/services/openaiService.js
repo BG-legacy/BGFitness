@@ -50,7 +50,6 @@ const CACHE_TTL = config.cache.ttl || 300000; // 5 minutes (300000 ms)
 // Set higher timeouts for mobile clients
 const MOBILE_TIMEOUT = 30000; // Reduced from 60000 to 30000 (30 seconds for mobile)
 const STANDARD_TIMEOUT = config.timeout || 20000; // Reduced from 30000 to 20000 (20 seconds default)
-const NUTRITION_TIMEOUT = 15000; // Special shorter timeout for nutrition requests
 
 /**
  * Advanced JSON repair function to handle common JSON parsing errors
@@ -167,9 +166,10 @@ class OpenAIService {
     async generateResponse(prompt, systemMessage, isMobile = false, res = null) {
         const sanitizedPrompt = this.sanitizeInput(prompt);
         
-        // Check if this is a workout request or nutrition request
+        // Check if this is a workout request
         const isWorkoutRequest = systemMessage.includes('workout plan generator');
-        const isNutritionRequest = systemMessage.includes('meal plan generator');
+        // Define isNutritionRequest variable to fix errors (always false since nutrition is removed)
+        const isNutritionRequest = false;
         
         // Optimize system message for faster processing and better accuracy
         const optimizedSystemMessage = this.optimizePrompt(systemMessage, sanitizedPrompt);
@@ -183,11 +183,11 @@ class OpenAIService {
             random: isWorkoutRequest ? Date.now() + Math.random() : undefined
         });
         
-        // For nutrition requests, check cache even with streaming
+        // Skip cache for workout requests and if disableCaching flag is set
         const useCache = config.cache.enabled && 
                         !isWorkoutRequest && 
-                        (!res || isNutritionRequest) &&
-                        !sanitizedPrompt.disableCaching;  // Skip cache if disableCaching flag is set
+                        !res &&
+                        !sanitizedPrompt.disableCaching;
         
         // Check cache first - optimized caching
         if (useCache) {
@@ -206,15 +206,13 @@ class OpenAIService {
 
         // Handle streaming response if response object is provided
         if (res && config.streaming) {
-            return this.streamResponse(sanitizedPrompt, optimizedSystemMessage, isMobile, res, isNutritionRequest);
+            return this.streamResponse(sanitizedPrompt, optimizedSystemMessage, isMobile, res);
         }
 
         const makeApiCall = async () => {
             try {
                 // Get client with appropriate timeout
-                // Use shorter timeout for nutrition requests
-                const timeout = isNutritionRequest ? NUTRITION_TIMEOUT : 
-                               (isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT);
+                const timeout = isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT;
                 
                 const client = new OpenAI({
                     apiKey: config.apiKey,
@@ -225,10 +223,7 @@ class OpenAIService {
                 // Simplified prompt structure for faster processing
                 const simplifiedPrompt = {};
                 
-                // For nutrition, only include essential fields
-                const fields = isNutritionRequest ? 
-                    ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 'estimatedCalories', 'estimatedMacros'] :
-                    ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 
+                const fields = ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 
                     'fitnessGoal', 'level', 'duration', 'equipment', 'restrictions',
                     'workoutType', 'previousWorkouts', 'preferences'];
                     
@@ -237,18 +232,17 @@ class OpenAIService {
                         simplifiedPrompt[field] = sanitizedPrompt[field];
                     }
                 }
-                
+
                 // For nutrition requests, use optimized token settings
-                const maxTokens = isNutritionRequest ? config.nutritionMaxTokens || 700 :
-                               (isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens);
+                const maxTokens = config.maxTokens || 2000;
                 
                 // For nutrition, use optimized temperature for balance of speed and accuracy
-                const temperature = isNutritionRequest ? config.nutritionTemperature || 0.4 : config.temperature;
+                const temperature = config.temperature || 0.4;
                 
                 // Try with the primary model first
                 try {
                     // Use different model settings for nutrition
-                    const modelToUse = isNutritionRequest ? config.fallbackModel : config.model;
+                    const modelToUse = config.fallbackModel;
                     
                     const response = await client.chat.completions.create({
                         model: modelToUse,
@@ -406,163 +400,110 @@ class OpenAIService {
     }
 
     /**
-     * Stream OpenAI response directly to client
+     * Stream response from OpenAI directly to client
      * @param {Object} prompt - Input data
      * @param {String} systemMessage - System message
-     * @param {Boolean} isMobile - Mobile optimization flag
+     * @param {Boolean} isMobile - Whether the request is from mobile
      * @param {Object} res - Express response object
-     * @param {Boolean} isNutrition - Whether this is a nutrition request
+     * @returns {Promise<void>}
      */
-    async streamResponse(prompt, systemMessage, isMobile, res, isNutrition = false) {
+    async streamResponse(prompt, systemMessage, isMobile, res) {
         try {
-            // Set up streaming headers
-            res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Transfer-Encoding', 'chunked');
-
-            // Create stream variables
-            let jsonBuffer = '';
-            let isJsonComplete = false;
+            console.log('Starting streaming response');
             
-            // Get client with appropriate timeout - use shorter timeout for nutrition
-            const timeout = isNutrition ? NUTRITION_TIMEOUT : 
-                          (isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT);
+            // Get client with appropriate timeout
+            const timeout = isMobile ? MOBILE_TIMEOUT : STANDARD_TIMEOUT;
             
             const client = new OpenAI({
                 apiKey: config.apiKey,
-                timeout,
-                maxRetries: isMobile ? 2 : 1, // Lower for streaming
+                timeout: timeout,
+                maxRetries: 1, // Only retry once for streaming
             });
             
-            // Simplified prompt for faster processing
-            const simplifiedPrompt = {};
-            
-            // Use fewer fields for nutrition requests
-            const fields = isNutrition ? 
-                ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 'estimatedCalories', 'estimatedMacros'] :
-                ['weight', 'height', 'age', 'goal', 'activityLevel', 
-                 'dietaryRestrictions', 'fitnessGoal', 'level', 'duration', 
-                 'equipment', 'restrictions', 'workoutType', 'previousWorkouts'];
-            
-            for (const field of fields) {
-                if (prompt[field] !== undefined) {
-                    simplifiedPrompt[field] = prompt[field];
+            // Build optimized message structure
+            const messages = [
+                {
+                    role: 'system',
+                    content: systemMessage
+                },
+                {
+                    role: 'user',
+                    content: JSON.stringify(prompt)
                 }
-            }
-
-            // Use a smaller token limit for nutrition streaming
-            const maxTokens = isNutrition ? 800 :
-                            (isMobile ? Math.min(config.maxTokens, 800) : config.maxTokens);
+            ];
             
-            // Use the fallback model for nutrition requests to speed up response
-            const modelToUse = isNutrition ? config.fallbackModel : config.model;
+            const fields = ['weight', 'height', 'age', 'goal', 'activityLevel', 'dietaryRestrictions', 
+                'fitnessGoal', 'level', 'duration', 'equipment', 'restrictions',
+                'workoutType', 'previousWorkouts', 'preferences'];
             
-            // Create the streaming request
+            // Optimize token usage for faster response
+            const maxTokens = isMobile ? config.mobileMaxTokens || 1000 : config.maxTokens || 2000;
+            
+            // Use the configured model
+            const modelToUse = config.model;
+            
+            // Start the stream
             const stream = await client.chat.completions.create({
                 model: modelToUse,
-                messages: [
-                    { role: 'system', content: systemMessage },
-                    { role: 'user', content: JSON.stringify(simplifiedPrompt) }
-                ],
+                messages: messages,
                 max_tokens: maxTokens,
-                temperature: isNutrition ? 0.5 : config.temperature, // Higher temp for faster nutrition responses
-                response_format: { type: 'json_object' },
-                stream: true
+                temperature: config.temperature,
+                stream: true,
             });
-
-            // Start with a JSON opening bracket
-            res.write('{\n');
-            res.write('"streaming": true,\n');
-            res.write('"chunks": [\n');
             
-            let isFirstChunk = true;
+            // Send appropriate headers
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            
+            let fullContent = '';
             
             // Process the stream
             for await (const chunk of stream) {
-                if (chunk.choices[0]?.delta?.content) {
-                    const content = chunk.choices[0].delta.content;
-                    
-                    // Append to the JSON buffer
-                    jsonBuffer += content;
-                    
-                    // Send chunk to client
-                    if (!isFirstChunk) {
-                        res.write(',\n');
-                    }
-                    
-                    res.write(JSON.stringify({ content }));
-                    isFirstChunk = false;
+                const content = chunk.choices[0]?.delta?.content || '';
+                if (content) {
+                    fullContent += content;
+                    res.write(`data: ${JSON.stringify({ content })}\n\n`);
                 }
-            }
-            
-            // Send closing tags for streaming
-            res.write('\n],\n');
-            
-            // Try to parse the complete JSON response
-            try {
-                const parsedResponse = repairAndParseJSON(jsonBuffer);
-                
-                // Add the complete JSON to the response
-                res.write('"complete": ');
-                res.write(JSON.stringify(parsedResponse));
-                res.write('\n}');
-                
-                // Mark JSON as complete
-                isJsonComplete = true;
-                
-                // Cache this successful response for nutrition requests
-                if (isNutrition && config.cache.enabled && !prompt.disableCaching) {
-                    const cacheKey = JSON.stringify({
-                        prompt,
-                        systemMessage
-                    });
-                    
-                    responseCache.set(cacheKey, {
-                        data: parsedResponse,
-                        timestamp: Date.now()
-                    });
-                }
-            } catch (jsonError) {
-                console.error('Error parsing streaming JSON:', jsonError);
-                
-                // Send error information
-                res.write('"error": true,\n');
-                res.write('"errorType": "parsing",\n');
-                res.write('"errorMessage": "Failed to parse streaming response"\n}');
             }
             
             // End the response
+            res.write('data: [DONE]\n\n');
             res.end();
             
-            // Return status for internal tracking
-            return { streaming: true, complete: isJsonComplete };
-        } catch (error) {
-            console.error('Streaming error:', error);
+            console.log('Streaming completed successfully');
             
-            // If headers haven't been sent yet, send an error response
+            // Try to parse the full content as JSON
+            let parsedContent;
+            try {
+                parsedContent = repairAndParseJSON(fullContent);
+            } catch (err) {
+                console.warn('Failed to parse streaming response as JSON:', err.message);
+                
+                // Invalid JSON response might still be useful as text - don't attempt to cache
+                return;
+            }
+            
+            return;
+        } catch (error) {
+            console.error('Error in streaming response:', error);
+            
+            // Handle errors without crashing
             if (!res.headersSent) {
                 res.status(500).json({
                     error: true,
-                    errorType: 'streaming',
-                    errorMessage: 'Error streaming AI response'
+                    message: 'Error generating streaming response',
+                    details: error.message
                 });
             } else {
-                // Otherwise, try to gracefully end the stream with an error
+                // If headers already sent, try to send an error event
                 try {
-                    res.write(',\n"error": true,\n');
-                    res.write('"errorType": "streaming",\n');
-                    res.write('"errorMessage": "Error during streaming"\n}');
+                    res.write(`data: ${JSON.stringify({ error: true, message: error.message })}\n\n`);
                     res.end();
                 } catch (e) {
-                    // Last resort - just end the response
-                    try {
-                        res.end();
-                    } catch (finalError) {
-                        console.error('Failed to end response stream:', finalError);
-                    }
+                    console.error('Failed to send error in stream:', e);
                 }
             }
-            
-            return { streaming: true, error: true };
         }
     }
 
@@ -603,41 +544,6 @@ class OpenAIService {
             
             // Default optimization with explicit parameters
             return `${systemMessage}\n\nIMPORTANT: Create a ${level} level workout focused on ${goal} that takes about ${duration} minutes. Ensure exercises are varied, effective, and aligned with the goal.`;
-        }
-        
-        // If it's a nutrition prompt, optimize for meal planning
-        if (systemMessage.includes('meal plan generator')) {
-            // Extract key information
-            const restrictions = prompt.dietaryRestrictions || [];
-            const goal = prompt.goal || 'healthy eating';
-            
-            // Add unique identifier to prevent reusing patterns
-            const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
-            
-            // Create specific constraints with strong personalization signals
-            const restrictionsStr = Array.isArray(restrictions) ? 
-                restrictions.join(', ') : 
-                (typeof restrictions === 'string' ? restrictions : '');
-                
-            // Build food preference string if available
-            let foodPrefStr = '';
-            if (prompt.foodPreferences) {
-                const prefs = prompt.foodPreferences;
-                
-                if (prefs.preferredProteinSources && prefs.preferredProteinSources.length) {
-                    foodPrefStr += `\nPreferred protein sources: ${prefs.preferredProteinSources.join(', ')}`;
-                }
-                
-                if (prefs.mealStyle) {
-                    foodPrefStr += `\nPreferred meal style: ${prefs.mealStyle}`;
-                }
-            }
-            
-            if (restrictionsStr) {
-                return `${systemMessage}\n\nCRITICAL: Create a COMPLETELY UNIQUE meal plan (uniqueID: ${uniqueId}) for this specific user focused on their ${goal} goal that strictly adheres to these dietary restrictions: ${restrictionsStr}.${foodPrefStr}\n\nNEVER use generic template meal plans. Replace all placeholder ingredients with specific foods. Make this plan different from any previous meal plans by varying ingredients, meal timing, and cooking methods.`;
-            }
-            
-            return `${systemMessage}\n\nCRITICAL: Create a COMPLETELY UNIQUE meal plan (uniqueID: ${uniqueId}) for this specific user focused on their ${goal} goal.${foodPrefStr}\n\nNEVER use generic template meal plans. Replace all placeholder ingredients with specific foods. Make this plan different from any previous meal plans by varying ingredients, meal timing, and cooking methods.`;
         }
         
         // Default case - return original

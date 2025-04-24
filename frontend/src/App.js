@@ -7,7 +7,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import WorkoutPlan from './components/WorkoutPlan';
-import NutritionPlan from './components/NutritionPlan';
 import UtilityDemo from './pages/UtilityDemo';
 import LandingPage from './pages/LandingPage';
 import './styles/App.css';
@@ -85,10 +84,6 @@ function App() {
               <span className="icon">💪</span>
               <span className="text">Workout Plans</span>
             </button>
-            <button className={activeTab === 'nutrition' ? 'active' : ''} onClick={() => handleNavClick('nutrition')}>
-              <span className="icon">🥗</span>
-              <span className="text">Nutrition Plans</span>
-            </button>
             <button className={activeTab === 'utilities' ? 'active' : ''} onClick={() => handleNavClick('utilities')}>
               <span className="icon">🛠️</span>
               <span className="text">Utilities</span>
@@ -104,12 +99,10 @@ function App() {
           <div className="page-header">
             <h1>
               {activeTab === 'workout' && 'Workout Plans'}
-              {activeTab === 'nutrition' && 'Nutrition Plans'}
               {activeTab === 'utilities' && 'Fitness Utilities'}
             </h1>
             <p className="subtitle">
               {activeTab === 'workout' && 'Build your perfect workout routine'}
-              {activeTab === 'nutrition' && 'Create personalized nutrition plans'}
               {activeTab === 'utilities' && 'Tools to enhance your fitness journey'}
             </p>
           </div>
@@ -117,7 +110,6 @@ function App() {
           {/* Dynamic Content Rendering */}
           <div className="content-container">
             {activeTab === 'workout' && <WorkoutPlan />}
-            {activeTab === 'nutrition' && <NutritionPlan />}
             {activeTab === 'utilities' && <UtilityDemo />}
           </div>
         </main>

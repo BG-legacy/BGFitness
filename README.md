@@ -4,7 +4,7 @@ A modern fitness application that helps users track their workouts, manage their
 
 ## Project Overview
 
-BGFitness is a full-stack web application built with a modern tech stack, featuring a React frontend and Node.js/Express backend. The application provides users with tools to track their fitness progress, set goals, and maintain a healthy lifestyle.
+BGFitness is a full-stack web application built with a modern tech stack, featuring a React frontend and Node.js/Express backend. The application provides users with tools to create personalized workout plans, track their fitness progress, set goals, and maintain a healthy lifestyle.
 
 ## Tech Stack
 
@@ -20,7 +20,7 @@ BGFitness is a full-stack web application built with a modern tech stack, featur
 ### Backend
 - Node.js
 - Express.js 4.18.2
-- OpenAI API integration
+- OpenAI API integration for AI-powered workout generation
 - PDFKit for PDF generation
 - Testing: Jest, Supertest
 - ESLint for code quality
@@ -32,6 +32,11 @@ BGFitness is a full-stack web application built with a modern tech stack, featur
 frontend/
 ├── public/          # Static files
 ├── src/             # Source code
+│   ├── components/  # UI components
+│   ├── pages/       # Page components
+│   ├── hooks/       # Custom React hooks
+│   ├── styles/      # CSS styles
+│   └── utils/       # Utility functions
 ├── .eslintrc.json   # ESLint configuration
 ├── .prettierrc      # Prettier configuration
 └── package.json     # Frontend dependencies
@@ -58,7 +63,7 @@ backend/
 ### Prerequisites
 - Node.js (v14 or higher)
 - npm or yarn
-- OpenAI API key (for AI features)
+- OpenAI API key (for AI workout generation)
 
 ### Installation
 
@@ -109,21 +114,31 @@ cd backend
 npm test
 ```
 
+## Key Features
+
+- Personalized workout plan generation powered by AI
+- TDEE (Total Daily Energy Expenditure) calculator
+- Unit conversion tools for weight, height, and other measurements
+- Workout tracking and management
+- PDF and CSV export of workout plans
+- Mobile-responsive interface
+
 ## Development Notes
 
-### Key Features
-- User authentication and authorization
-- Workout tracking and management
-- Goal setting and progress monitoring
-- PDF report generation
-- AI-powered fitness recommendations
+### Technical Highlights
+- Integration of OpenAI API for AI-powered workout recommendations
+- PDF and CSV generation for workout plans
+- Custom React hooks for API interaction
+- Responsive UI design for desktop and mobile
+- Optimized API response caching and streaming
 
 ### Development Challenges
-- Integration of OpenAI API for personalized recommendations
-- PDF generation and formatting
+- Integration of the OpenAI API for generating varied, personalized workout plans
+- Ensuring API response speed and reliability with proper error handling
+- PDF and CSV formatting for workout data export
 - State management across multiple components
-- Real-time data synchronization
-- Cross-browser compatibility
+- Cross-browser compatibility and responsive design
+- Backend-frontend communication optimization
 
 ## Contributing
 

@@ -11,26 +11,27 @@
 }
 
 .response-card {
-  background-color: white;
+  background-color: var(--card-background);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   padding: 1.5rem;
   transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--border-color);
 }
 
 .response-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.15);
 }
 
 .card-title {
-  color: #333;
+  color: var(--accent-color);
   margin: 0 0 1rem 0;
   font-size: 1.25rem;
 }
 
 .description {
-  color: #666;
+  color: var(--text-color);
   margin-bottom: 1rem;
   line-height: 1.5;
 }
@@ -45,7 +46,7 @@
   display: flex;
   justify-content: space-between;
   padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .details-list li:last-child {
@@ -54,11 +55,11 @@
 
 .detail-label {
   font-weight: 500;
-  color: #444;
+  color: var(--accent-color);
 }
 
 .detail-value {
-  color: #666;
+  color: var(--text-color);
 }
 
 /* Table View Styles */
@@ -70,25 +71,26 @@
 .response-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--card-background);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .response-table th,
 .response-table td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .response-table th {
-  background-color: #4a90e2;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--dark-black);
   font-weight: 500;
 }
 
 .response-table tr:hover {
-  background-color: #f8f9fa;
+  background-color: var(--subtle-bg);
 }
 
 /* List View Styles */
@@ -103,17 +105,18 @@
 }
 
 .list-item {
-  background-color: white;
+  background-color: var(--card-background);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   padding: 1rem;
   margin-bottom: 1rem;
   transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--border-color);
 }
 
 .list-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.15);
 }
 
 .list-item-content {
@@ -129,7 +132,7 @@
 }
 
 .list-item-text {
-  color: #333;
+  color: var(--text-color);
   font-size: 1rem;
 }
 

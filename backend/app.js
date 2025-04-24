@@ -13,7 +13,6 @@ const session = require('express-session');
 const errorHandler = require('./middleware/errorHandler');
 const mobileDetect = require('./middleware/mobileDetect');
 const workoutRoutes = require('./routes/workoutRoutes');
-const nutritionRoutes = require('./routes/nutritionRoutes');
 const downloadRoutes = require('./routes/download');
 const diagnosticsRoutes = require('./routes/diagnostics');
 
@@ -113,7 +112,6 @@ app.use(session({
  * Mounts different route handlers for various API endpoints
  */
 app.use('/api/workout', workoutRoutes); // Workout-related endpoints
-app.use('/api/nutrition', nutritionRoutes); // Nutrition-related endpoints
 app.use('/api/download', downloadRoutes); // File download endpoints
 app.use('/api/diagnostics', diagnosticsRoutes); // Diagnostics endpoints
 

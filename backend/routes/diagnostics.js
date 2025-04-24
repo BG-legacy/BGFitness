@@ -263,11 +263,6 @@ router.get('/', (req, res) => {
         path: '/api/workout',
         method: 'POST',
         description: 'Generate workout plan'
-      },
-      {
-        path: '/api/nutrition',
-        method: 'POST',
-        description: 'Generate nutrition plan'
       }
     ],
     serverUrl: 'https://bgfitness.onrender.com',

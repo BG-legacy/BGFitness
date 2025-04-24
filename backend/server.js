@@ -23,7 +23,7 @@ const server = app.listen(PORT, () => {
     // Log available endpoints for easier debugging
     console.log('Available API endpoints:');
     console.log('- /api/workout - Workout generation endpoints');
-    console.log('- /api/nutrition - Nutrition plan endpoints');
+
     console.log('- /api/download - File download endpoints');
     console.log('- /api/diagnostics - System diagnostics endpoints');
 });

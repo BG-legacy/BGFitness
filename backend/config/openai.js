@@ -6,8 +6,6 @@ module.exports = {
     fallbackModel: 'gpt-3.5-turbo-0125',
     maxTokens: 1200,
     temperature: 0.3,
-    nutritionTemperature: 0.4,
-    nutritionMaxTokens: 700,
     retryConfig: {
         maxRetries: 3,
         initialDelay: 300,
