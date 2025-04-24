@@ -11,16 +11,16 @@ class NutritionController {
             // Pre-calculate nutrition estimates to improve accuracy and speed
             this.addNutritionEstimates(input);
             
-            // Optimize input data to reduce processing time
-            const optimizedInput = this.optimizeInputForSpeed(input);
+            // Enhance input with personalization signals
+            const personalizedInput = this.addPersonalizationSignals(input);
             
             // If express response object is provided, stream the response
             if (res) {
-                return await openaiService.generateResponse(optimizedInput, nutritionSystemPrompt, isMobile, res);
+                return await openaiService.generateResponse(personalizedInput, nutritionSystemPrompt, isMobile, res);
             }
             
             // Regular non-streaming response
-            return await openaiService.generateResponse(optimizedInput, nutritionSystemPrompt, isMobile);
+            return await openaiService.generateResponse(personalizedInput, nutritionSystemPrompt, isMobile);
             
         } catch (error) {
             console.error('Error generating meal plan:', error);
@@ -39,6 +39,126 @@ class NutritionController {
     }
     
     /**
+     * Add personalization signals to improve uniqueness of meal plans
+     */
+    addPersonalizationSignals(input) {
+        const enhanced = this.optimizeInputForSpeed(input);
+        
+        // Generate a unique request ID to prevent duplicate responses
+        enhanced.requestId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+        
+        // Add personalization flags
+        enhanced.ensureUniqueMeals = true;
+        enhanced.disableCaching = true; // Signal to OpenAI service not to cache this
+        
+        // Add variety preferences if not already present
+        if (!enhanced.foodPreferences) {
+            enhanced.foodPreferences = this.generateFoodPreferencesBasedOnGoal(input);
+        }
+        
+        // Add explicit instruction to replace template meal structures
+        enhanced.replaceTemplateIngredients = true;
+        enhanced.useSpecificIngredients = true;
+        
+        return enhanced;
+    }
+    
+    /**
+     * Generate food preferences based on user goals and restrictions
+     */
+    generateFoodPreferencesBasedOnGoal(input) {
+        const { goal, dietaryRestrictions = [] } = input;
+        const hasRestrictions = Array.isArray(dietaryRestrictions) && dietaryRestrictions.length > 0;
+        
+        // Default proteins based on restrictions
+        let proteinOptions = [
+            "Chicken breast", "Turkey", "Lean beef", "Salmon", "Tuna", 
+            "White fish", "Eggs", "Greek yogurt", "Cottage cheese"
+        ];
+        
+        // Default carbs
+        let carbOptions = [
+            "Brown rice", "Quinoa", "Sweet potato", "Oats", "Whole grain bread",
+            "Whole wheat pasta", "Beans", "Lentils", "Barley"
+        ];
+        
+        // Default vegetables
+        let vegetableOptions = [
+            "Spinach", "Kale", "Broccoli", "Brussels sprouts", "Cauliflower",
+            "Bell peppers", "Zucchini", "Asparagus", "Green beans", "Tomatoes"
+        ];
+        
+        // Default healthy fats
+        let fatOptions = [
+            "Avocado", "Olive oil", "Nuts", "Seeds", "Nut butters"
+        ];
+        
+        // Modify based on restrictions
+        if (hasRestrictions) {
+            const restrictions = dietaryRestrictions.map(r => r.toLowerCase());
+            
+            if (restrictions.some(r => r.includes('vegetarian'))) {
+                proteinOptions = [
+                    "Eggs", "Greek yogurt", "Cottage cheese", "Tofu", "Tempeh",
+                    "Seitan", "Protein powder", "Beans", "Lentils", "Chickpeas"
+                ];
+            }
+            
+            if (restrictions.some(r => r.includes('vegan'))) {
+                proteinOptions = [
+                    "Tofu", "Tempeh", "Seitan", "Beans", "Lentils", 
+                    "Chickpeas", "Edamame", "Plant protein powder", "Nutritional yeast", "Quinoa"
+                ];
+            }
+            
+            if (restrictions.some(r => r.includes('gluten') || r.includes('celiac'))) {
+                carbOptions = [
+                    "Brown rice", "Quinoa", "Sweet potato", "Rice noodles", "Buckwheat",
+                    "Gluten-free oats", "Corn tortillas", "Beans", "Lentils", "Amaranth"
+                ];
+            }
+            
+            if (restrictions.some(r => r.includes('dairy') || r.includes('lactose'))) {
+                const dairyIndex = proteinOptions.findIndex(p => 
+                    p.includes("yogurt") || p.includes("cheese"));
+                if (dairyIndex !== -1) {
+                    proteinOptions.splice(dairyIndex, 1, "Plant-based protein powder");
+                }
+            }
+        }
+        
+        // Modify based on goal
+        if (goal === 'weight_loss') {
+            // For weight loss, emphasize proteins and low-calorie options
+            return {
+                preferredProteinSources: proteinOptions.slice(0, 7),
+                preferredCarbSources: carbOptions.slice(0, 5),
+                preferredVegetables: vegetableOptions,
+                preferredFats: fatOptions.slice(0, 3),
+                mealStyle: "Clean, portion-controlled meals with emphasis on lean proteins and vegetables"
+            };
+        } else if (goal === 'muscle_gain') {
+            // For muscle gain, emphasize calorie-dense options
+            return {
+                preferredProteinSources: proteinOptions,
+                preferredCarbSources: carbOptions,
+                preferredVegetables: vegetableOptions.slice(0, 5),
+                preferredFats: fatOptions,
+                mealStyle: "Calorie-dense meals with emphasis on protein and complex carbohydrates"
+            };
+        } else {
+            // For general health/maintenance
+            return {
+                preferredProteinSources: proteinOptions.slice(0, 6),
+                preferredCarbSources: carbOptions.slice(0, 6),
+                preferredVegetables: vegetableOptions.slice(0, 7),
+                preferredFats: fatOptions,
+                mealStyle: "Balanced meals with variety of nutrients"
+            };
+        }
+    }
+    
+    /**
      * Optimize input data to reduce AI processing time
      */
     optimizeInputForSpeed(input) {
@@ -48,7 +168,7 @@ class NutritionController {
         const essentialFields = [
             'weight', 'height', 'age', 'goal', 'activityLevel', 
             'dietaryRestrictions', 'estimatedCalories', 'estimatedMacros',
-            'mealStructure', 'isMobile'
+            'mealStructure', 'isMobile', 'foodPreferences'
         ];
         
         // Create a clean input object with only essential fields
@@ -150,11 +270,17 @@ class NutritionController {
         const calories = this.calculateEstimatedCalories(input);
         const macros = this.generateDefaultMacros(input);
         
-        // Create a balanced meal distribution that follows common patterns
+        // Randomize meal times slightly to create more variation between users
+        const breakfastTime = ["7:00 AM", "7:30 AM", "8:00 AM", "8:30 AM"][Math.floor(Math.random() * 4)];
+        const lunchTime = ["12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM"][Math.floor(Math.random() * 4)];
+        const dinnerTime = ["6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM"][Math.floor(Math.random() * 4)];
+        const snackTime = ["3:00 PM", "3:30 PM", "4:00 PM", "10:00 AM"][Math.floor(Math.random() * 4)];
+        
+        // Create a balanced meal distribution with slight variations for uniqueness
         return [
             {
                 name: "Breakfast",
-                time: "8:00 AM",
+                time: breakfastTime,
                 calories: Math.round(calories * 0.25),
                 ingredients: [
                     { name: "Protein Source", amount: "serving", calories: 150 },
@@ -169,7 +295,7 @@ class NutritionController {
             },
             {
                 name: "Lunch",
-                time: "12:30 PM",
+                time: lunchTime,
                 calories: Math.round(calories * 0.35),
                 ingredients: [
                     { name: "Protein Source", amount: "serving", calories: 200 },
@@ -184,7 +310,7 @@ class NutritionController {
             },
             {
                 name: "Dinner",
-                time: "6:30 PM",
+                time: dinnerTime,
                 calories: Math.round(calories * 0.3),
                 ingredients: [
                     { name: "Protein Source", amount: "serving", calories: 200 },
@@ -199,7 +325,7 @@ class NutritionController {
             },
             {
                 name: "Snack",
-                time: "3:00 PM",
+                time: snackTime,
                 calories: Math.round(calories * 0.1),
                 ingredients: [
                     { name: "Protein Source", amount: "serving", calories: 100 },

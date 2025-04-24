@@ -186,7 +186,8 @@ class OpenAIService {
         // For nutrition requests, check cache even with streaming
         const useCache = config.cache.enabled && 
                         !isWorkoutRequest && 
-                        (!res || isNutritionRequest);
+                        (!res || isNutritionRequest) &&
+                        !sanitizedPrompt.disableCaching;  // Skip cache if disableCaching flag is set
         
         // Check cache first - optimized caching
         if (useCache) {
@@ -330,7 +331,7 @@ class OpenAIService {
             const result = await retryWithBackoff(makeApiCall, retryConfig);
             
             // Cache the result if caching is enabled
-            if (config.cache.enabled && !isWorkoutRequest) {
+            if (config.cache.enabled && !isWorkoutRequest && !sanitizedPrompt.disableCaching) {
                 responseCache.set(cacheKey, {
                     data: result,
                     timestamp: Date.now()
@@ -341,11 +342,14 @@ class OpenAIService {
         } catch (error) {
             console.error('Failed after multiple retries:', error.message);
             
-            // For nutrition, return a simplified fallback meal plan
+            // For nutrition, return an error message (no fallback mechanism)
             if (isNutritionRequest) {
-                console.log('Using fallback meal plan generator');
-                // This will be handled by the nutrition controller's fallback mechanism
-                throw new Error('nutrition_fallback_needed');
+                console.log('Nutrition request failed after retries');
+                return {
+                    error: true,
+                    errorType: "timeout",
+                    errorMessage: "The nutrition request took too long to process. Please try again."
+                };
             }
             
             // Return a simplified response that won't break the client UI
@@ -506,7 +510,7 @@ class OpenAIService {
                 isJsonComplete = true;
                 
                 // Cache this successful response for nutrition requests
-                if (isNutrition && config.cache.enabled) {
+                if (isNutrition && config.cache.enabled && !prompt.disableCaching) {
                     const cacheKey = JSON.stringify({
                         prompt,
                         systemMessage
@@ -607,16 +611,33 @@ class OpenAIService {
             const restrictions = prompt.dietaryRestrictions || [];
             const goal = prompt.goal || 'healthy eating';
             
-            // Create specific constraints
+            // Add unique identifier to prevent reusing patterns
+            const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+            
+            // Create specific constraints with strong personalization signals
             const restrictionsStr = Array.isArray(restrictions) ? 
                 restrictions.join(', ') : 
                 (typeof restrictions === 'string' ? restrictions : '');
                 
-            if (restrictionsStr) {
-                return `${systemMessage}\n\nIMPORTANT: Create a meal plan focused on ${goal} that strictly adheres to these dietary restrictions: ${restrictionsStr}. Ensure all meals comply with these restrictions while providing complete nutrition.`;
+            // Build food preference string if available
+            let foodPrefStr = '';
+            if (prompt.foodPreferences) {
+                const prefs = prompt.foodPreferences;
+                
+                if (prefs.preferredProteinSources && prefs.preferredProteinSources.length) {
+                    foodPrefStr += `\nPreferred protein sources: ${prefs.preferredProteinSources.join(', ')}`;
+                }
+                
+                if (prefs.mealStyle) {
+                    foodPrefStr += `\nPreferred meal style: ${prefs.mealStyle}`;
+                }
             }
             
-            return `${systemMessage}\n\nIMPORTANT: Create a nutritionally complete meal plan focused on ${goal}. Include exact portions and ensure macronutrient balance.`;
+            if (restrictionsStr) {
+                return `${systemMessage}\n\nCRITICAL: Create a COMPLETELY UNIQUE meal plan (uniqueID: ${uniqueId}) for this specific user focused on their ${goal} goal that strictly adheres to these dietary restrictions: ${restrictionsStr}.${foodPrefStr}\n\nNEVER use generic template meal plans. Replace all placeholder ingredients with specific foods. Make this plan different from any previous meal plans by varying ingredients, meal timing, and cooking methods.`;
+            }
+            
+            return `${systemMessage}\n\nCRITICAL: Create a COMPLETELY UNIQUE meal plan (uniqueID: ${uniqueId}) for this specific user focused on their ${goal} goal.${foodPrefStr}\n\nNEVER use generic template meal plans. Replace all placeholder ingredients with specific foods. Make this plan different from any previous meal plans by varying ingredients, meal timing, and cooking methods.`;
         }
         
         // Default case - return original

@@ -10,8 +10,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
-const compression = require('compression');
-const helmet = require('helmet');
 const errorHandler = require('./middleware/errorHandler');
 const mobileDetect = require('./middleware/mobileDetect');
 const workoutRoutes = require('./routes/workoutRoutes');
@@ -25,17 +23,30 @@ const app = express();
 /**
  * Performance Middleware
  * These middleware functions optimize performance and security
+ * Try-catch blocks ensure the app works even if modules aren't installed yet
  */
-// Compression middleware to reduce response size
-app.use(compression({
-  level: 6, // Balance between compression and CPU usage
-  threshold: 1024, // Only compress responses larger than 1KB
-}));
+try {
+  // Compression middleware to reduce response size
+  const compression = require('compression');
+  app.use(compression({
+    level: 6, // Balance between compression and CPU usage
+    threshold: 1024, // Only compress responses larger than 1KB
+  }));
+  console.log('Compression middleware enabled');
+} catch (error) {
+  console.warn('Compression middleware not available:', error.message);
+}
 
-// Security headers with Helmet
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP in development for easier testing
-}));
+try {
+  // Security headers with Helmet
+  const helmet = require('helmet');
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP in development for easier testing
+  }));
+  console.log('Helmet middleware enabled');
+} catch (error) {
+  console.warn('Helmet middleware not available:', error.message);
+}
 
 /**
  * Middleware Configuration
