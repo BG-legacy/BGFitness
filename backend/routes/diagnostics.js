@@ -172,4 +172,107 @@ router.post('/mobile-ai-test', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/diagnostics/mobile-ai-test
+ * @desc    GET endpoint for mobile AI testing - can be directly accessed from mobile browser
+ * @access  Public
+ */
+router.get('/mobile-ai-test', async (req, res) => {
+  try {
+    // Import OpenAI service directly in this route
+    const openaiService = require('../services/openaiService');
+    
+    // Simple test prompt with minimal tokens needed
+    const testPrompt = {
+      prompt: "Generate a very simple response to test mobile connection",
+      isMobile: true
+    };
+    
+    // Very simple system prompt to minimize token usage
+    const testSystemPrompt = `You are a system tester. Keep your response under 50 tokens. 
+    Respond with a simple JSON object: {"message": "AI connection working", "status": "success"}`;
+    
+    // Run a minimal AI test - force mobile mode with small token count
+    const result = await openaiService.generateResponse(testPrompt, testSystemPrompt, true);
+    
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: "Mobile AI test GET endpoint successful",
+      testResult: result,
+      timestamp: new Date().toISOString(),
+      mobileDetected: req.isMobile || false,
+      connectionInfo: {
+        userAgent: req.headers['user-agent'],
+        ip: req.ip
+      }
+    });
+  } catch (error) {
+    // Return simplified error for GET endpoint
+    res.status(500).json({
+      success: false,
+      message: "Mobile AI test failed: " + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @route   GET /api/diagnostics
+ * @desc    API Guide for all diagnostic endpoints
+ * @access  Public
+ */
+router.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'BGFitness API Diagnostics Guide',
+    endpoints: [
+      {
+        path: '/api/diagnostics/ping',
+        method: 'GET',
+        description: 'Simple connectivity test'
+      },
+      {
+        path: '/api/diagnostics/mobile',
+        method: 'GET',
+        description: 'Mobile client connectivity test'
+      },
+      {
+        path: '/api/diagnostics/mobile-ai-test',
+        method: 'GET',
+        description: 'Test AI connectivity from mobile (minimal test)'
+      },
+      {
+        path: '/api/diagnostics/mobile-ai-test',
+        method: 'POST',
+        description: 'Comprehensive AI test with custom prompt support'
+      },
+      {
+        path: '/api/diagnostics/info',
+        method: 'GET',
+        description: 'Detailed system and connection information'
+      },
+      {
+        path: '/api/diagnostics/healthcheck',
+        method: 'GET',
+        description: 'System health status'
+      }
+    ],
+    mainApiEndpoints: [
+      {
+        path: '/api/workout',
+        method: 'POST',
+        description: 'Generate workout plan'
+      },
+      {
+        path: '/api/nutrition',
+        method: 'POST',
+        description: 'Generate nutrition plan'
+      }
+    ],
+    serverUrl: 'https://bgfitness.onrender.com',
+    timestamp: new Date().toISOString()
+  });
+});
+
 module.exports = router; 
