@@ -102,11 +102,8 @@ const TDEECalculator = () => {
 
   const handleInputChange = e => {
     const { name, value } = e.target;
-    // Ensure we're working with a valid number or empty string
-    const processedValue = value === '' ? '' : 
-      name === 'weight' || name === 'height' || name === 'age' || name === 'rate' ? 
-      Number(value) : value;
-
+    const processedValue =
+      value === '' ? '' : name === 'weight' || name === 'height' || name === 'age' || name === 'rate' ? Number(value) : value;
     setFormData(prev => ({
       ...prev,
       [name]: processedValue,
@@ -142,7 +139,9 @@ const TDEECalculator = () => {
   return (
     <div className="tdee-calculator">
       <h2>TDEE Calculator</h2>
-      <p className="calculator-description">Using the Harris-Benedict equation with fixed caloric deficits/surpluses for reliable weight management</p>
+      <p className="calculator-description">
+        Using the Harris-Benedict equation with fixed caloric deficits/surpluses for reliable weight management
+      </p>
 
       <div className="form-section">
         <div className="form-group">
@@ -253,15 +252,18 @@ const TDEECalculator = () => {
         <div className="results-section">
           <h3>Your Results</h3>
           {warning && (
-            <div className="warning-message" style={{ 
-              backgroundColor: '#ffe6e6', 
-              border: '1px solid #ff8080', 
-              borderRadius: '5px', 
-              padding: '10px', 
-              marginBottom: '15px',
-              color: '#cc0000'
-            }}>
-              <p>{warning}</p>
+            <div
+              className="warning-message"
+              style={{
+                backgroundColor: '#ffe6e6',
+                border: '1px solid #ff8080',
+                borderRadius: '5px',
+                padding: '10px',
+                margin: '10px 0',
+                color: '#cc0000',
+              }}
+            >
+              {warning}
             </div>
           )}
           <div className="result-card">
@@ -281,13 +283,17 @@ const TDEECalculator = () => {
               <h4>{formData.goal === 'maintain' ? 'Maintenance' : formData.goal === 'lose' ? 'Weight Loss' : 'Weight Gain'} Calories:</h4>
               <p>{results.targetCalories} calories/day</p>
               <small>
-                {formData.goal === 'maintain' 
-                  ? 'Daily calorie target to maintain weight' 
-                  : formData.goal === 'lose' 
-                    ? `TDEE minus ${formData.rate} calorie deficit (${Math.round(formData.rate/500*1)} lb/week)` 
-                    : `TDEE plus ${formData.rate} calorie surplus (${Math.round(formData.rate/500*1)} lb/week)`
-                }
+                {formData.goal === 'maintain'
+                  ? 'Daily calorie target to maintain weight'
+                  : formData.goal === 'lose'
+                    ? `TDEE minus ${formData.rate} calorie deficit (${Math.round((formData.rate / 500) * 1)} lb/week)`
+                    : `TDEE plus ${formData.rate} calorie surplus (${Math.round((formData.rate / 500) * 1)} lb/week)`}
               </small>
+            </div>
+
+            <div className="result-item">
+              <h4>Weight Change Rate</h4>
+              <p>{formData.goal === 'lose' ? `-${(formData.rate / 500) * 1} lb/week` : `+${(formData.rate / 500) * 1} lb/week`}</p>
             </div>
           </div>
 

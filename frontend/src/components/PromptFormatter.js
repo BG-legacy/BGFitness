@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { formatFitnessPlanPrompt, formatNutritionPlanPrompt, formatDebugOutput } from '../utils/promptFormatters';
+import {
+  formatFitnessPlanPrompt,
+  formatNutritionPlanPrompt,
+  formatDebugOutput,
+} from '../utils/promptFormatters';
 import '../styles/PromptFormatter.css';
 
 const PromptFormatter = () => {
@@ -76,14 +80,23 @@ const PromptFormatter = () => {
         <div className="prompt-type-selector">
           <label>Select Prompt Type:</label>
           <div className="button-group">
-            <button className={promptType === 'fitness' ? 'active' : ''} onClick={() => setPromptType('fitness')}>
+            <button
+              className={promptType === 'fitness' ? 'active' : ''}
+              onClick={() => setPromptType('fitness')}
+            >
               Fitness Plan
             </button>
-            <button className={promptType === 'nutrition' ? 'active' : ''} onClick={() => setPromptType('nutrition')}>
+            <button
+              className={promptType === 'nutrition' ? 'active' : ''}
+              onClick={() => setPromptType('nutrition')}
+            >
               Nutrition Plan
             </button>
-            <button className={promptType === 'debug' ? 'active' : ''} onClick={() => setPromptType('debug')}>
-              Debug Output
+            <button
+              className={promptType === 'debug' ? 'active' : ''}
+              onClick={() => setPromptType('debug')}
+            >
+              Debug
             </button>
           </div>
         </div>
@@ -114,7 +127,12 @@ const PromptFormatter = () => {
               <div className="form-group">
                 <label>Weight:</label>
                 <div className="input-with-unit">
-                  <input type="number" name="weight" value={formData.weight} onChange={handleChange} />
+                  <input
+                    type="number"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleChange}
+                  />
                   <select name="weightUnit" value={formData.weightUnit} onChange={handleChange}>
                     <option value="kg">kg</option>
                     <option value="lbs">lbs</option>
@@ -125,7 +143,12 @@ const PromptFormatter = () => {
               <div className="form-group">
                 <label>Height:</label>
                 <div className="input-with-unit">
-                  <input type="number" name="height" value={formData.height} onChange={handleChange} />
+                  <input
+                    type="number"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleChange}
+                  />
                   <select name="heightUnit" value={formData.heightUnit} onChange={handleChange}>
                     <option value="cm">cm</option>
                     <option value="in">in</option>
@@ -148,18 +171,33 @@ const PromptFormatter = () => {
 
             <div className="form-group">
               <label>Fitness Goals:</label>
-              <input type="text" name="fitnessGoals" value={formData.fitnessGoals} onChange={handleChange} />
+              <input
+                type="text"
+                name="fitnessGoals"
+                value={formData.fitnessGoals}
+                onChange={handleChange}
+              />
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label>Target Weight:</label>
-                <input type="number" name="targetWeight" value={formData.targetWeight} onChange={handleChange} />
+                <input
+                  type="number"
+                  name="targetWeight"
+                  value={formData.targetWeight}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="form-group">
                 <label>Time Frame:</label>
-                <input type="text" name="timeFrame" value={formData.timeFrame} onChange={handleChange} />
+                <input
+                  type="text"
+                  name="timeFrame"
+                  value={formData.timeFrame}
+                  onChange={handleChange}
+                />
               </div>
             </div>
 
@@ -176,7 +214,12 @@ const PromptFormatter = () => {
 
             <div className="form-group">
               <label>Available Time for Workouts:</label>
-              <input type="text" name="availableTime" value={formData.availableTime} onChange={handleChange} />
+              <input
+                type="text"
+                name="availableTime"
+                value={formData.availableTime}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
@@ -194,7 +237,12 @@ const PromptFormatter = () => {
 
             <div className="form-group">
               <label>Allergies (comma separated):</label>
-              <input type="text" name="allergies" value={formData.allergies.join(', ')} onChange={handleListChange} />
+              <input
+                type="text"
+                name="allergies"
+                value={formData.allergies.join(', ')}
+                onChange={handleListChange}
+              />
             </div>
 
             <div className="form-group">
@@ -212,7 +260,12 @@ const PromptFormatter = () => {
             <h3>Exercise & Equipment</h3>
             <div className="form-group">
               <label>Available Equipment (comma separated):</label>
-              <input type="text" name="equipment" value={formData.equipment.join(', ')} onChange={handleListChange} />
+              <input
+                type="text"
+                name="equipment"
+                value={formData.equipment.join(', ')}
+                onChange={handleListChange}
+              />
             </div>
 
             <div className="form-group">
@@ -225,7 +278,12 @@ const PromptFormatter = () => {
             <h3>Nutrition Details</h3>
             <div className="form-group">
               <label>Nutrition Goals:</label>
-              <input type="text" name="nutritionGoals" value={formData.nutritionGoals} onChange={handleChange} />
+              <input
+                type="text"
+                name="nutritionGoals"
+                value={formData.nutritionGoals}
+                onChange={handleChange}
+              />
             </div>
 
             <div className="form-row">
@@ -271,7 +329,10 @@ const PromptFormatter = () => {
             <h3>Formatted {promptType === 'debug' ? 'Debug Output' : 'Prompt'}</h3>
             <pre>{formattedPrompt}</pre>
             <div className="copy-button-container">
-              <button className="copy-button" onClick={() => navigator.clipboard.writeText(formattedPrompt)}>
+              <button
+                className="copy-button"
+                onClick={() => navigator.clipboard.writeText(formattedPrompt)}
+              >
                 Copy to Clipboard
               </button>
             </div>
