@@ -11,7 +11,7 @@ const TDEECalculator = () => {
     gender: 'male',
     activityLevel: 'moderate',
     goal: 'maintain',
-    rate: 0.2,
+    rate: 500,
   });
 
   const [units, setUnits] = useState({
@@ -25,18 +25,33 @@ const TDEECalculator = () => {
   });
 
   const [results, setResults] = useState(null);
+  const [warning, setWarning] = useState(null);
 
   const calculateResults = useCallback(() => {
     const { weight, height, age, gender, activityLevel, goal, rate } = formData;
 
-    // Calculate BMR using the Mifflin-St Jeor Equation
-    const bmr = calculateBMR(weight, height, age, gender);
+    // Convert weight to kg if needed for BMR calculation
+    const weightInKg = units.weight === 'kg' ? weight : weight / 2.20462;
+
+    // Calculate BMR using the Harris-Benedict Equation
+    const bmr = calculateBMR(weightInKg, height, age, gender);
 
     // Calculate TDEE based on activity level
     const tdee = calculateTDEE(bmr, activityLevel);
 
     // Calculate target calories based on goal
     const targetCalories = calculateCaloriesByGoal(tdee, goal, rate);
+
+    // Check if BMR or TDEE are unusually high
+    if (bmr > 2500) {
+      setWarning('Your BMR appears unusually high, which may lead to overestimated calorie needs. Please verify your measurements.');
+    } else if (tdee > 3500) {
+      setWarning('Your estimated calorie needs are very high. Consider consulting a nutritionist for personalized guidance.');
+    } else if (bmr < 1000) {
+      setWarning('Your BMR appears unusually low. Please verify your measurements are correct.');
+    } else {
+      setWarning(null);
+    }
 
     // Determine macros (simple calculation - can be customized)
     const protein = Math.round((targetCalories * 0.3) / 4); // 30% protein (4 calories per gram)
@@ -49,7 +64,7 @@ const TDEECalculator = () => {
       targetCalories: Math.round(targetCalories),
       macros: { protein, fat, carbs },
     });
-  }, [formData]);
+  }, [formData, units.weight]);
 
   // Calculate results when form data changes
   useEffect(() => {
@@ -57,7 +72,7 @@ const TDEECalculator = () => {
     if (formData.weight && formData.height && formData.age && formData.weight !== '' && formData.height !== '' && formData.age !== '') {
       calculateResults();
     }
-  }, [calculateResults, formData]);
+  }, [calculateResults, formData, units.weight]);
 
   // Handle unit conversion for height
   useEffect(() => {
@@ -88,7 +103,9 @@ const TDEECalculator = () => {
   const handleInputChange = e => {
     const { name, value } = e.target;
     // Ensure we're working with a valid number or empty string
-    const processedValue = value === '' ? '' : name === 'weight' || name === 'height' || name === 'age' ? Number(value) : value;
+    const processedValue = value === '' ? '' : 
+      name === 'weight' || name === 'height' || name === 'age' || name === 'rate' ? 
+      Number(value) : value;
 
     setFormData(prev => ({
       ...prev,
@@ -125,6 +142,7 @@ const TDEECalculator = () => {
   return (
     <div className="tdee-calculator">
       <h2>TDEE Calculator</h2>
+      <p className="calculator-description">Using the Harris-Benedict equation with fixed caloric deficits/surpluses for reliable weight management</p>
 
       <div className="form-section">
         <div className="form-group">
@@ -200,6 +218,7 @@ const TDEECalculator = () => {
               <option value="moderate">Moderate (exercise 3-5 days/week)</option>
               <option value="active">Active (exercise 6-7 days/week)</option>
               <option value="very">Very Active (intense exercise daily)</option>
+              <option value="athlete">Athlete (professional/intense training multiple times daily)</option>
             </select>
           </label>
         </div>
@@ -218,11 +237,12 @@ const TDEECalculator = () => {
         {formData.goal !== 'maintain' && (
           <div className="form-group">
             <label>
-              Rate:
+              {formData.goal === 'lose' ? 'Deficit' : 'Surplus'}:
               <select name="rate" value={formData.rate} onChange={handleInputChange}>
-                <option value="0.1">Slow (10% deficit/surplus)</option>
-                <option value="0.2">Moderate (20% deficit/surplus)</option>
-                <option value="0.3">Aggressive (30% deficit/surplus)</option>
+                <option value="250">{formData.goal === 'lose' ? 'Small Deficit' : 'Small Surplus'} (250 calories/day)</option>
+                <option value="500">{formData.goal === 'lose' ? 'Moderate Deficit' : 'Moderate Surplus'} (500 calories/day)</option>
+                <option value="750">{formData.goal === 'lose' ? 'Large Deficit' : 'Large Surplus'} (750 calories/day)</option>
+                <option value="1000">{formData.goal === 'lose' ? 'Aggressive Deficit' : 'Aggressive Surplus'} (1000 calories/day)</option>
               </select>
             </label>
           </div>
@@ -232,6 +252,18 @@ const TDEECalculator = () => {
       {results && (
         <div className="results-section">
           <h3>Your Results</h3>
+          {warning && (
+            <div className="warning-message" style={{ 
+              backgroundColor: '#ffe6e6', 
+              border: '1px solid #ff8080', 
+              borderRadius: '5px', 
+              padding: '10px', 
+              marginBottom: '15px',
+              color: '#cc0000'
+            }}>
+              <p>{warning}</p>
+            </div>
+          )}
           <div className="result-card">
             <div className="result-item">
               <h4>BMR:</h4>
@@ -248,7 +280,14 @@ const TDEECalculator = () => {
             <div className="result-item highlight">
               <h4>{formData.goal === 'maintain' ? 'Maintenance' : formData.goal === 'lose' ? 'Weight Loss' : 'Weight Gain'} Calories:</h4>
               <p>{results.targetCalories} calories/day</p>
-              <small>Daily calorie target to {formData.goal} weight</small>
+              <small>
+                {formData.goal === 'maintain' 
+                  ? 'Daily calorie target to maintain weight' 
+                  : formData.goal === 'lose' 
+                    ? `TDEE minus ${formData.rate} calorie deficit (${Math.round(formData.rate/500*1)} lb/week)` 
+                    : `TDEE plus ${formData.rate} calorie surplus (${Math.round(formData.rate/500*1)} lb/week)`
+                }
+              </small>
             </div>
           </div>
 

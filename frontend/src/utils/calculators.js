@@ -3,57 +3,95 @@
  */
 
 /**
- * Calculate Basal Metabolic Rate (BMR) using the Mifflin-St Jeor Equation
+ * Calculate Basal Metabolic Rate (BMR) using the Harris-Benedict equation
  * @param {number} weight - Weight in kg
  * @param {number} height - Height in cm
  * @param {number} age - Age in years
  * @param {string} gender - 'male' or 'female'
- * @returns {number} BMR in calories per day
+ * @returns {number} BMR in calories
  */
 export const calculateBMR = (weight, height, age, gender) => {
+  const validatedWeight = validateNumber(weight, 'Weight');
+  const validatedHeight = validateNumber(height, 'Height');
+  const validatedAge = validateNumber(age, 'Age');
+
   if (gender.toLowerCase() === 'male') {
-    return 10 * weight + 6.25 * height - 5 * age + 5;
+    return 66.5 + 13.75 * validatedWeight + 5 * validatedHeight - 6.76 * validatedAge;
   } else {
-    return 10 * weight + 6.25 * height - 5 * age - 161;
+    return 655.1 + 9.6 * validatedWeight + 1.8 * validatedHeight - 4.7 * validatedAge;
   }
 };
 
 /**
  * Calculate Total Daily Energy Expenditure (TDEE)
  * @param {number} bmr - Basal Metabolic Rate
- * @param {string} activityLevel - Activity level ('sedentary', 'light', 'moderate', 'active', 'very')
- * @returns {number} TDEE in calories per day
+ * @param {string} activityLevel - Activity level description
+ * @returns {number} TDEE in calories
  */
 export const calculateTDEE = (bmr, activityLevel) => {
+  const validatedBMR = validateNumber(bmr, 'BMR');
   const activityMultipliers = {
-    sedentary: 1.2, // Little or no exercise
-    light: 1.375, // Light exercise 1-3 days/week
-    moderate: 1.55, // Moderate exercise 3-5 days/week
-    active: 1.725, // Hard exercise 6-7 days/week
-    very: 1.9, // Very hard exercise & physical job or training twice a day
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    active: 1.725,
+    veryActive: 1.9,
   };
 
-  const multiplier = activityMultipliers[activityLevel.toLowerCase()] || 1.2;
-  return Math.round(bmr * multiplier);
+  const multiplier = activityMultipliers[activityLevel.toLowerCase()];
+  if (!multiplier) {
+    throw new Error('Invalid activity level');
+  }
+
+  return Math.round(validatedBMR * multiplier);
 };
 
 /**
- * Calculate calories needed based on goal
+ * Calculate daily calorie needs based on goal
  * @param {number} tdee - Total Daily Energy Expenditure
- * @param {string} goal - 'lose', 'maintain', or 'gain'
- * @param {number} rate - Rate of weight change (percentage as decimal)
- * @returns {number} Calories per day
+ * @param {string} goal - Weight goal ('lose', 'maintain', 'gain')
+ * @param {number} [rate=0.5] - Rate of weight change in kg per week
+ * @returns {number} Daily calorie target
  */
-export const calculateCaloriesByGoal = (tdee, goal, rate = 0.2) => {
+export const calculateCaloriesByGoal = (tdee, goal, rate = 0.5) => {
+  const validatedTDEE = validateNumber(tdee, 'TDEE');
+  const validatedRate = validateNumber(rate, 'Rate');
+
+  let calorieAdjustment;
   switch (goal.toLowerCase()) {
-    case 'lose':
-      return Math.round(tdee * (1 - rate));
-    case 'gain':
-      return Math.round(tdee * (1 + rate));
-    case 'maintain':
-    default:
-      return tdee;
+    case 'lose': {
+      calorieAdjustment = (-7700 * validatedRate) / 7;
+      break;
+    }
+    case 'maintain': {
+      calorieAdjustment = 0;
+      break;
+    }
+    case 'gain': {
+      calorieAdjustment = (7700 * validatedRate) / 7;
+      break;
+    }
+    default: {
+      throw new Error('Invalid goal');
+    }
   }
+
+  return Math.round(validatedTDEE + calorieAdjustment);
+};
+
+/**
+ * Validate that a number is valid and positive
+ * @param {number} value - The value to validate
+ * @param {string} name - The name of the value for error messages
+ * @returns {number} The validated number
+ * @throws {Error} If the value is invalid
+ */
+const validateNumber = (value, name) => {
+  const num = Number(value);
+  if (isNaN(num) || num <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
+  return num;
 };
 
 /**
