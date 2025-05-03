@@ -19,7 +19,7 @@
     "helmet": "^7.1.0",
     "json2csv": "^6.0.0-alpha.2",
     "openai": "^4.28.0",
-    "pdfkit": "^0.13.0"
+    "pdfkit": "^0.16.0"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
